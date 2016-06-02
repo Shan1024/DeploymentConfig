@@ -39,7 +39,7 @@ public class ConfigUtilTest {
 
             // Parse the YAML
             map = yaml.loadAs(ios, Map.class);
-            System.out.println(map);
+//            System.out.println(map);
 
         } catch (Exception e) {
             e.printStackTrace();

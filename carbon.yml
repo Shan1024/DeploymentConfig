@@ -11,6 +11,8 @@ ports:
 deployment:
   mode: scheduled
 
+
+#Array
 transports:
 - transport:
     name: netty
