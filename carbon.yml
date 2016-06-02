@@ -3,11 +3,16 @@ name: ${sys.name}        #Server Name
 version: ${env.version}  #Server Version
 tenant: default          #Tenant Name
 ports:
- offset: 0
+  offset: 0
+  https:
+    port: 123
+    backup:
+      port: 456
 deployment:
- mode: scheduled
-security:
- https:
-  port: 123
-  backup:
-   port: 456
+  mode: scheduled
+
+transports:
+- transport:
+    name: netty
+- transport:
+    name: xyz

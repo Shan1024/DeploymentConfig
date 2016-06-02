@@ -1,0 +1,17 @@
+id: ${sec.key}
+name: ${sys.name}
+version: ${env.version}
+tenant: shan
+ports:
+  offset: '1'
+  https:
+    port: '443'
+    backup:
+      port: '444'
+deployment:
+  mode: scheduled
+transports:
+- transport:
+    name: netty
+- transport:
+    name: xyz

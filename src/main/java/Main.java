@@ -60,6 +60,17 @@ public class Main {
             Map newMap = getDeploymentValues(carbonYMLMap, "carbon.yml");
             System.out.println("NewMap: " + newMap);
 
+            Yaml yaml = new Yaml();
+            String output = yaml.dumpAsMap(newMap);
+            System.out.println(output);
+
+            File newFile= new File("carbon_new.yml");
+            FileWriter fileWriter=  new FileWriter(newFile);
+            fileWriter.write(output);
+            fileWriter.flush();
+            fileWriter.close();
+
+
         } catch (IOException ex) {
             ex.printStackTrace();
         } finally {
