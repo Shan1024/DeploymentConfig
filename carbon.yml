@@ -1,0 +1,13 @@
+id: ${sec.key}           #Value to uniquely identify a server
+name: ${sys.name}        #Server Name
+version: ${env.version}  #Server Version
+tenant: default          #Tenant Name
+ports:
+ offset: 0
+deployment:
+ mode: scheduled
+security:
+ https:
+  port: 123
+  backup:
+   port: 456
