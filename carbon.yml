@@ -1,4 +1,4 @@
-id: ${sec.key}           #Value to uniquely identify a server
+id: myid          #Value to uniquely identify a server
 name: ${sys.name}        #Server Name
 version: ${env.version}  #Server Version
 tenant: default          #Tenant Name

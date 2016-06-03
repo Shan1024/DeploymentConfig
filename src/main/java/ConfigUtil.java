@@ -1,3 +1,22 @@
+/*
+ *  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.XML;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.*;
@@ -7,9 +26,12 @@ import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
- * Created by shan on 6/2/16.
+ * This is the utility class that provides the capability to get the values from deployment.properties file.
+ *
+ * @since 5.1.0
  */
 
+@SuppressWarnings("unchecked")
 public final class ConfigUtil {
 
     private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
@@ -21,35 +43,27 @@ public final class ConfigUtil {
 
     }
 
+    /**
+     * This method will update the values of a given map with the values found with the filename prefix in
+     * deployment.properties file.
+     *
+     * @param currentValuesMap Map containing the current values of configs
+     * @param fileName         Name of the config file
+     */
     public static Map getConfigs(Map currentValuesMap, String fileName) {
-
-        logger.info("Retrieving config data for " + fileName);
-        logger.info("Map : " + currentValuesMap);
 
         fileName = "[" + fileName.trim() + "]";
 
         if (deploymentPropertiesMap.containsKey(fileName)) {
 
-            logger.info("Config data available for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME);
-
             Map newValuesMap = deploymentPropertiesMap.get(fileName);
-
-            logger.info("Config data for " + fileName + ": " + newValuesMap);
 
             for (Object key : newValuesMap.keySet()) {
 
-                logger.info("Key: " + key);
-
                 if (currentValuesMap.containsKey(key.toString())) {
-
                     String newValue = newValuesMap.get(key.toString()).toString();
                     currentValuesMap.put(key.toString(), newValue);
-
-                    logger.info(key + " was found in the " + fileName + " file. Current value replaced with " +
-                            newValue);
-
                 } else if (key.toString().indexOf('.') != -1) {
-                    logger.info("Processing [" + key + "]");
                     updateValue(currentValuesMap, key.toString(), newValuesMap.get(key));
                 } else {
                     logger.warning(key + " was not found in " + fileName);
@@ -61,47 +75,27 @@ public final class ConfigUtil {
             logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
         }
 
-        //temp -----------------------------------------------------------------
-        //        Yaml yaml = new Yaml();
-        //        String output = yaml.dumpAsMap(currentValuesMap);
-        //        System.out.println(output);
-        //
-        //        try {
-        //            File newFile = new File("carbon_new.yml");
-        //            FileWriter fileWriter = new FileWriter(newFile);
-        //            fileWriter.write(output);
-        //            fileWriter.flush();
-        //
-        //            fileWriter.close();
-        //        } catch (IOException e) {
-        //            e.printStackTrace();
-        //        }
-        //end temp -------------------------------------------------------------
-
         return currentValuesMap;
     }
 
+    /**
+     * This method will return all the values that has filename prefix in deployment.properties file.
+     *
+     * @param fileName Name of the config file
+     */
     public static Map getConfigs(String fileName) {
 
         Map configs;
-        logger.info("Retrieving config data for " + fileName);
 
         fileName = "[" + fileName.trim() + "]";
 
         if (deploymentPropertiesMap.containsKey(fileName)) {
-
-            logger.info("Config data available for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME);
             configs = deploymentPropertiesMap.get(fileName);
-
         } else {
-
-            logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
             configs = new HashMap();
-
         }
 
         return configs;
-
     }
 
     public static String convertMapToYmlString(Map map) {
@@ -111,29 +105,31 @@ public final class ConfigUtil {
         return yamlString;
     }
 
-    //todo
+    /**
+     * This method will return the new value of a key if the key is available in deployment.properties file. If it is
+     * not found, this method returns the defaultValue given as a parameter.
+     *
+     * @param key          Key of the config property
+     * @param defaultValue Default value to return in case if the key is not found
+     */
+    public static <T> T getValue(String key, T defaultValue) {
 
-    //Regex to identify correctly formatted key - ^(\[\w+\.\w+\]){1}(\/\w+)(\..+)*=(.+)$
+        //todo
+        //Regex to identify correctly formatted key - ^(\[\w+\.\w+\]){1}(\/\w+)(\..+)*=(.+)$
+        //Reges to identify formats with arrays - ^(\[\w+\.\w+\]){1}(\/\w+)(\.\w+(\[@.+=\d+\])*)*=(.+)$
 
-    //basic Regex (\[.+\]){1}(\/.+)(\..+)*=(.+)
-    public static Object getValue(String key, Object defaultValue) {
+        //basic Regex (\[.+\]){1}(\/.+)(\..+)*=(.+)
 
-        Object newValue = null;
+        T newValue = null;
 
-        String[] temp = key.toString().split("/");
+        String[] temp = key.split("/");
         String fileName = temp[0];
         String xpath = temp[1];
 
-        logger.info("fileName: " + fileName);
-        logger.info("xpath: " + xpath);
-
         if (deploymentPropertiesMap.containsKey(fileName)) {
-            logger.info("Config data available for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
             Map valuesMap = deploymentPropertiesMap.get(fileName);
-            //            newValue = getValue(fileMap, xpath);
-
             if (valuesMap.containsKey(xpath)) {
-                newValue= valuesMap.get(xpath);
+                newValue = (T)valuesMap.get(xpath);
             }
         } else {
             logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
@@ -142,21 +138,133 @@ public final class ConfigUtil {
         if (newValue == null) {
             return defaultValue;
         } else {
-            if(canParseToInt(newValue)){
-                newValue=Integer.parseInt(newValue.toString());
-            }else if(canParseToDouble(newValue)){
-                newValue=Double.parseDouble(newValue.toString());
-            }else if(canParseToBoolean(newValue)){
-                newValue=Boolean.parseBoolean(newValue.toString());
-            }
+            //Need to cast the values
+//            if (canParseToInt(newValue)) {
+//                newValue = Integer.parseInt(newValue.toString());
+//            } else if (canParseToDouble(newValue)) {
+//                newValue = Double.parseDouble(newValue.toString());
+//            } else if (canParseToBoolean(newValue)) {
+//                newValue = Boolean.parseBoolean(newValue.toString());
+//            }
 
             return newValue;
         }
     }
 
-    //todo
-    public static Map replaceAllPlaceholders(Map map) {
+    public static Map loadXMLAsMap(String xmlString) {
+
+        Map map = null;
+
+        try {
+            JSONObject xmlJSONObj = XML.toJSONObject(xmlString);
+            String jsonPrettyPrintString = xmlJSONObj.toString();
+            System.out.println(jsonPrettyPrintString);
+
+            Yaml yaml = new Yaml();
+
+            //            Object yamlObj = yaml.load(jsonPrettyPrintString);
+            //            System.out.println(yamlObj);
+
+            map = yaml.loadAs(jsonPrettyPrintString, Map.class);
+
+        } catch (JSONException e) {
+
+        }
+
         return map;
+    }
+
+    //todo
+//    private static String convertXMLToYAML(String xmlString) {
+//
+//        String yamlString = "";
+//
+//        try {
+//            JSONObject xmlJSONObj = XML
+//                    .toJSONObject("<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>");
+//            String jsonPrettyPrintString = xmlJSONObj.toString();
+//            System.out.println(jsonPrettyPrintString);
+//
+//            Yaml yaml = new Yaml();
+//
+//            Object yamlObj = yaml.load(jsonPrettyPrintString);
+//            System.out.println(yamlObj);
+//
+//        } catch (JSONException e) {
+//
+//        }
+//
+//        return yamlString;
+//    }
+
+    //todo
+    //    public static Map replaceAllPlaceholders(Map map) {
+    //        return map;
+    //    }
+
+    private static void updateValue(Map currentValues, String xpath, Object newValue) {
+
+        int index = xpath.indexOf('.');
+
+        if (index != -1) {
+
+            String firstKey = xpath.substring(0, index);
+            String secondKey = xpath.substring(index + 1);
+
+            if (currentValues.containsKey(firstKey)) {
+
+                Object currentValue = currentValues.get(firstKey);
+
+                //since we had a . in the path, we need to traverse more. So the value should be a map
+                if (currentValue instanceof Map) {
+                    updateValue((Map) currentValue, secondKey, newValue);
+                } else {
+                    logger.warning("Error: can traverse more. But end node found");
+                }
+            } else {
+                logger.warning(firstKey + " not found.");
+            }
+
+        } else {
+
+            if (currentValues.containsKey(xpath)) {
+
+                Object currentValue = currentValues.get(xpath);
+
+                if (currentValue instanceof Integer) {
+
+                    if (canParseToInt(newValue)) {
+                        int value = Integer.parseInt(newValue.toString());
+                        currentValues.put(xpath, value);
+                    } else {
+                        currentValues.put(xpath, newValue);
+                    }
+
+                } else if (currentValue instanceof Double) {
+
+                    if (canParseToDouble(newValue)) {
+                        double value = Double.parseDouble(newValue.toString());
+                        currentValues.put(xpath, value);
+                    } else {
+                        currentValues.put(xpath, newValue);
+                    }
+
+                } else if (currentValue instanceof Boolean) {
+
+                    if (canParseToBoolean(newValue)) {
+                        boolean value = Boolean.parseBoolean(newValue.toString());
+                        currentValues.put(xpath, value);
+                    } else {
+                        currentValues.put(xpath, newValue);
+                    }
+
+                } else {
+                    currentValues.put(xpath, newValue);
+                }
+            } else {
+                logger.info("Final path,[" + xpath + "] was not found");
+            }
+        }
     }
 
     //    private static Object getValue(Map map, String xpath) {
@@ -187,102 +295,11 @@ public final class ConfigUtil {
     //        }
     //    }
 
-    private static void updateValue(Map currentValues, String xpath, Object newValue) {
-
-        logger.info("xpath: " + xpath);
-
-        int index = xpath.indexOf('.');
-        logger.info("Index: " + index);
-
-        if (index != -1) {
-
-            logger.info("More paths to travel");
-
-            String firstKey = xpath.substring(0, index);
-            logger.info("firstKey: " + firstKey);
-
-            String secondKey = xpath.substring(index + 1);
-            logger.info("secondKey: " + secondKey);
-
-            if (currentValues.containsKey(firstKey)) {
-
-                logger.info(firstKey + " was found");
-
-                Object currentValue = currentValues.get(firstKey);
-                logger.info("currentValue: " + currentValue);
-
-                //since we had a . in the path, we need to traverse more. So the value should be a map
-                if (currentValue instanceof Map) {
-                    logger.info("Map found");
-                    updateValue((Map) currentValue, secondKey, newValue);
-                } else {
-                    logger.warning("Error: can traverse more. But end node found");
-                }
-
-            } else {
-                logger.warning(firstKey + " not found.");
-            }
-
-        } else {
-            logger.info("Final path found");
-
-            if (currentValues.containsKey(xpath)) {
-                logger.info("Final path,[" + xpath + "] was found. Replacing the value.");
-
-                Object currentValue = currentValues.get(xpath);
-
-                if (currentValue instanceof Integer) {
-
-                    if (canParseToInt(newValue)) {
-                        int value = Integer.parseInt(newValue.toString());
-                        currentValues.put(xpath, value);
-                    } else {
-                        logger.warning("Types does not match: ");
-                        logger.warning("currentValue=" + currentValue + ":" + currentValue.getClass().getName() + " , "
-                                + newValue + ":" + newValue.getClass().getName());
-
-                        currentValues.put(xpath, newValue);
-                    }
-
-                } else if (currentValue instanceof Double) {
-
-                    if (canParseToDouble(newValue)) {
-                        double value = Double.parseDouble(newValue.toString());
-                        currentValues.put(xpath, value);
-                    } else {
-                        logger.warning("Types does not match: ");
-                        logger.warning("currentValue=" + currentValue + ":" + currentValue.getClass().getName() + " , "
-                                + newValue + ":" + newValue.getClass().getName());
-                        currentValues.put(xpath, newValue);
-                    }
-
-                } else if (currentValue instanceof Boolean) {
-
-                    if (canParseToBoolean(newValue)) {
-                        boolean value = Boolean.parseBoolean(newValue.toString());
-                        currentValues.put(xpath, value);
-                    } else {
-                        logger.warning("Types does not match: ");
-                        logger.warning("currentValue=" + currentValue + ":" + currentValue.getClass().getName() + " , "
-                                + newValue + ":" + newValue.getClass().getName());
-                        currentValues.put(xpath, newValue);
-                    }
-
-                } else {
-                    currentValues.put(xpath, newValue);
-                }
-            } else {
-                logger.info("Final path,[" + xpath + "] was not found");
-
-            }
-        }
-    }
-
     private static boolean canParseToInt(Object obj) {
 
         boolean canParse = true;
         try {
-            int value = Integer.parseInt(obj.toString());
+            Integer.parseInt(obj.toString());
         } catch (NumberFormatException exception) {
             canParse = false;
         }
@@ -293,7 +310,7 @@ public final class ConfigUtil {
 
         boolean canParse = true;
         try {
-            double value = Double.parseDouble(obj.toString());
+            Double.parseDouble(obj.toString());
         } catch (NumberFormatException exception) {
             canParse = false;
         }
@@ -301,21 +318,10 @@ public final class ConfigUtil {
     }
 
     private static boolean canParseToBoolean(Object obj) {
-
-        boolean canParse;
-
-        if ("true".equals(obj.toString().toLowerCase()) || "false".equals(obj.toString().toLowerCase())) {
-            canParse = true;
-        } else {
-            canParse = false;
-        }
-
-        return canParse;
+        return "true".equals(obj.toString().toLowerCase()) || "false".equals(obj.toString().toLowerCase());
     }
 
     private static Map<String, Map<String, String>> readDeploymentFile() {
-
-        logger.info("readDeploymentFile() called");
 
         Map<String, Map<String, String>> tempPropertiesMap = new HashMap<String, Map<String, String>>();
 
@@ -331,36 +337,21 @@ public final class ConfigUtil {
 
                 deploymentProperties.load(input);
 
-                logger.info("Properties loaded successfully from " + DEPLOYMENT_PROPERTIES_FILE_NAME);
-                logger.info("Loaded Properties: \n" + deploymentProperties);
-                logger.info("Creating properties map");
-
                 for (Object key : deploymentProperties.keySet()) {
-                    logger.info("key: " + key);
 
                     String value = deploymentProperties.getProperty(key.toString());
-                    logger.info("value: " + value);
-
                     String[] temp = key.toString().split("/");
                     String fileName = temp[0];
                     String xpath = temp[1];
 
-                    logger.info("fileName: " + fileName);
-                    logger.info("xpath: " + xpath);
-
                     if (tempPropertiesMap.containsKey(fileName)) {
-                        logger.info("Properties for current file already available in the map. Adding new entry to "
-                                + "the map.");
                         Map<String, String> tempMap = tempPropertiesMap.get(fileName);
                         tempMap.put(xpath, value);
                     } else {
-                        logger.info("Properties for current file not found in map. Creating a new sub map and "
-                                + "entering value.");
                         Map<String, String> tempMap = new HashMap<String, String>();
                         tempMap.put(xpath, value);
                         tempPropertiesMap.put(fileName, tempMap);
                     }
-                    logger.info("[" + key + "=" + value + "] successfully processed --------------------------------");
                 }
 
             } else {

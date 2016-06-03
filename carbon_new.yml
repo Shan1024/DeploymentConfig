@@ -1,4 +1,4 @@
-id: ${sec.key}
+id: jdhalkhsa
 name: ${sys.name}
 version: ${env.version}
 tenant: shanm
