@@ -10,11 +10,10 @@ ports:
       port: 456
 deployment:
   mode: scheduled
-
-
-#Array
 transports:
 - transport:
     name: netty
 - transport:
     name: xyz
+logging:
+  enable: false

@@ -3,11 +3,11 @@ name: ${sys.name}
 version: ${env.version}
 tenant: shanm
 ports:
-  offset: '12'
+  offset: 12
   https:
-    port: '4848'
+    port: 4848
     backup:
-      port: '4949'
+      port: 4949
 deployment:
   mode: scheduled
 transports:
@@ -15,3 +15,5 @@ transports:
     name: netty
 - transport:
     name: xyz
+logging:
+  enable: true

@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 /**
  * Created by shan on 6/2/16.
  */
+
 public final class ConfigUtil {
 
     private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
@@ -49,7 +50,7 @@ public final class ConfigUtil {
 
                 } else if (key.toString().indexOf('.') != -1) {
                     logger.info("Processing [" + key + "]");
-                    mapToValue(currentValuesMap, key.toString(), newValuesMap.get(key));
+                    updateValue(currentValuesMap, key.toString(), newValuesMap.get(key));
                 } else {
                     logger.warning(key + " was not found in " + fileName);
                 }
@@ -60,35 +61,47 @@ public final class ConfigUtil {
             logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
         }
 
-        //temp
-        Yaml yaml = new Yaml();
-        String output = yaml.dumpAsMap(currentValuesMap);
-        System.out.println(output);
-
-        try {
-            File newFile = new File("carbon_new.yml");
-            FileWriter fileWriter = new FileWriter(newFile);
-            fileWriter.write(output);
-            fileWriter.flush();
-
-            fileWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        //end temp
+        //temp -----------------------------------------------------------------
+        //        Yaml yaml = new Yaml();
+        //        String output = yaml.dumpAsMap(currentValuesMap);
+        //        System.out.println(output);
+        //
+        //        try {
+        //            File newFile = new File("carbon_new.yml");
+        //            FileWriter fileWriter = new FileWriter(newFile);
+        //            fileWriter.write(output);
+        //            fileWriter.flush();
+        //
+        //            fileWriter.close();
+        //        } catch (IOException e) {
+        //            e.printStackTrace();
+        //        }
+        //end temp -------------------------------------------------------------
 
         return currentValuesMap;
     }
 
-    //Regex (\[.+\]){1}(\/.+)(\..+)*=(.+)
-    public static String getValue(String key, String defaultValue) {
-        String newValue = null;
+    public static Map getConfigs(String fileName) {
 
-        if (newValue == null) {
-            return defaultValue;
+        Map configs;
+        logger.info("Retrieving config data for " + fileName);
+
+        fileName = "[" + fileName.trim() + "]";
+
+        if (deploymentPropertiesMap.containsKey(fileName)) {
+
+            logger.info("Config data available for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME);
+            configs = deploymentPropertiesMap.get(fileName);
+
         } else {
-            return newValue;
+
+            logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
+            configs = new HashMap();
+
         }
+
+        return configs;
+
     }
 
     public static String convertMapToYmlString(Map map) {
@@ -98,11 +111,83 @@ public final class ConfigUtil {
         return yamlString;
     }
 
+    //todo
+
+    //Regex to identify correctly formatted key - ^(\[\w+\.\w+\]){1}(\/\w+)(\..+)*=(.+)$
+
+    //basic Regex (\[.+\]){1}(\/.+)(\..+)*=(.+)
+    public static Object getValue(String key, Object defaultValue) {
+
+        Object newValue = null;
+
+        String[] temp = key.toString().split("/");
+        String fileName = temp[0];
+        String xpath = temp[1];
+
+        logger.info("fileName: " + fileName);
+        logger.info("xpath: " + xpath);
+
+        if (deploymentPropertiesMap.containsKey(fileName)) {
+            logger.info("Config data available for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
+            Map valuesMap = deploymentPropertiesMap.get(fileName);
+            //            newValue = getValue(fileMap, xpath);
+
+            if (valuesMap.containsKey(xpath)) {
+                newValue= valuesMap.get(xpath);
+            }
+        } else {
+            logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
+        }
+
+        if (newValue == null) {
+            return defaultValue;
+        } else {
+            if(canParseToInt(newValue)){
+                newValue=Integer.parseInt(newValue.toString());
+            }else if(canParseToDouble(newValue)){
+                newValue=Double.parseDouble(newValue.toString());
+            }else if(canParseToBoolean(newValue)){
+                newValue=Boolean.parseBoolean(newValue.toString());
+            }
+
+            return newValue;
+        }
+    }
+
+    //todo
     public static Map replaceAllPlaceholders(Map map) {
         return map;
     }
 
-    private static void mapToValue(Map currentValues, String xpath, Object newValue) {
+    //    private static Object getValue(Map map, String xpath) {
+    //        int index = xpath.indexOf('.');
+    //
+    //        if (index != -1) {
+    //            String firstKey = xpath.substring(0, index);
+    //            String secondKey = xpath.substring(index + 1);
+    //
+    //            if (map.containsKey(firstKey)) {
+    //                Object currentValue = map.get(firstKey);
+    //                if (currentValue instanceof Map) {
+    //                    logger.info("Map found");
+    //                    return getValue((Map) currentValue, secondKey);
+    //                } else {
+    //                    logger.warning("Error: can traverse more. But end node found");
+    //                    return null;
+    //                }
+    //            } else {
+    //                return null;
+    //            }
+    //        } else {
+    //            if (map.containsKey(xpath)) {
+    //                return map.get(xpath);
+    //            } else {
+    //                return null;
+    //            }
+    //        }
+    //    }
+
+    private static void updateValue(Map currentValues, String xpath, Object newValue) {
 
         logger.info("xpath: " + xpath);
 
@@ -129,7 +214,7 @@ public final class ConfigUtil {
                 //since we had a . in the path, we need to traverse more. So the value should be a map
                 if (currentValue instanceof Map) {
                     logger.info("Map found");
-                    mapToValue((Map) currentValue, secondKey, newValue);
+                    updateValue((Map) currentValue, secondKey, newValue);
                 } else {
                     logger.warning("Error: can traverse more. But end node found");
                 }
@@ -143,13 +228,89 @@ public final class ConfigUtil {
 
             if (currentValues.containsKey(xpath)) {
                 logger.info("Final path,[" + xpath + "] was found. Replacing the value.");
-                currentValues.put(xpath, newValue);
+
+                Object currentValue = currentValues.get(xpath);
+
+                if (currentValue instanceof Integer) {
+
+                    if (canParseToInt(newValue)) {
+                        int value = Integer.parseInt(newValue.toString());
+                        currentValues.put(xpath, value);
+                    } else {
+                        logger.warning("Types does not match: ");
+                        logger.warning("currentValue=" + currentValue + ":" + currentValue.getClass().getName() + " , "
+                                + newValue + ":" + newValue.getClass().getName());
+
+                        currentValues.put(xpath, newValue);
+                    }
+
+                } else if (currentValue instanceof Double) {
+
+                    if (canParseToDouble(newValue)) {
+                        double value = Double.parseDouble(newValue.toString());
+                        currentValues.put(xpath, value);
+                    } else {
+                        logger.warning("Types does not match: ");
+                        logger.warning("currentValue=" + currentValue + ":" + currentValue.getClass().getName() + " , "
+                                + newValue + ":" + newValue.getClass().getName());
+                        currentValues.put(xpath, newValue);
+                    }
+
+                } else if (currentValue instanceof Boolean) {
+
+                    if (canParseToBoolean(newValue)) {
+                        boolean value = Boolean.parseBoolean(newValue.toString());
+                        currentValues.put(xpath, value);
+                    } else {
+                        logger.warning("Types does not match: ");
+                        logger.warning("currentValue=" + currentValue + ":" + currentValue.getClass().getName() + " , "
+                                + newValue + ":" + newValue.getClass().getName());
+                        currentValues.put(xpath, newValue);
+                    }
+
+                } else {
+                    currentValues.put(xpath, newValue);
+                }
             } else {
                 logger.info("Final path,[" + xpath + "] was not found");
 
             }
         }
+    }
 
+    private static boolean canParseToInt(Object obj) {
+
+        boolean canParse = true;
+        try {
+            int value = Integer.parseInt(obj.toString());
+        } catch (NumberFormatException exception) {
+            canParse = false;
+        }
+        return canParse;
+    }
+
+    private static boolean canParseToDouble(Object obj) {
+
+        boolean canParse = true;
+        try {
+            double value = Double.parseDouble(obj.toString());
+        } catch (NumberFormatException exception) {
+            canParse = false;
+        }
+        return canParse;
+    }
+
+    private static boolean canParseToBoolean(Object obj) {
+
+        boolean canParse;
+
+        if ("true".equals(obj.toString().toLowerCase()) || "false".equals(obj.toString().toLowerCase())) {
+            canParse = true;
+        } else {
+            canParse = false;
+        }
+
+        return canParse;
     }
 
     private static Map<String, Map<String, String>> readDeploymentFile() {
