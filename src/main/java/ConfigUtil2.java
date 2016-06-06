@@ -12,12 +12,10 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -28,12 +26,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-/**
- * Created by shan on 6/3/16.
- */
 public class ConfigUtil2 {
 
-    private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
+    private static Logger logger = Logger.getLogger(ConfigUtil2.class.getName());
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
     public static final String XML_ROOT = "configs";
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
@@ -45,10 +40,8 @@ public class ConfigUtil2 {
     public static String getConfig(File file, ConfigFileFormat configFileFormat) {
 
         String config = "";
-        FileInputStream fileInputStream = null;
-
         try {
-            fileInputStream = new FileInputStream(file);
+            FileInputStream fileInputStream = new FileInputStream(file);
             config = getConfig(fileInputStream, file.getName(), configFileFormat);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -66,7 +59,6 @@ public class ConfigUtil2 {
             while ((line = bufferedReader.readLine()) != null) {
                 out.append(line + "\n");
             }
-            //            System.out.println(out.toString());   //Prints the string content read from input stream
             bufferedReader.close();
 
             config = parseFile(out.toString(), configFileFormat);
@@ -77,12 +69,32 @@ public class ConfigUtil2 {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return config;
     }
 
     public static <T> T getConfig(String key) {
 
-        return (T) "";
+        T returnValue = null;
+        int index = key.toString().indexOf("/");
+
+        if (index != -1) {
+            String fileName = key.toString().substring(0, index);
+            String xpath = key.toString().substring(index);
+            if (deploymentPropertiesMap.containsKey(fileName)) {
+                Map<String, String> configMap = deploymentPropertiesMap.get(fileName);
+                if (configMap.containsKey(xpath)) {
+                    //                    try {
+                    returnValue = (T) configMap.get(xpath);
+                    //                    } catch (ClassCastException e) {
+                    //                        logger.warning("Error: " + e);
+                    //                    }
+                }
+            } else {
+                logger.warning(xpath + " was not found");
+            }
+        }
+        return returnValue;
     }
 
     private static String parseFile(String data, ConfigFileFormat configFileFormat) {
@@ -146,7 +158,6 @@ public class ConfigUtil2 {
                     System.out.println(nodeList);
                 }
                 updatedString = convertXMLtoString(doc);
-                //                updatedString = prettyFormat(doc, 4);
 
             } catch (ParserConfigurationException e) {
                 System.out.println(e);
@@ -186,12 +197,14 @@ public class ConfigUtil2 {
     }
 
     public static String convertXMLtoString(Document doc) {
+
         String xmlString = "";
         try {
-            // Method 1
             StringWriter stringWriter = new StringWriter();
+
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             transformerFactory.setAttribute("indent-number", 4);
+
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
@@ -199,42 +212,14 @@ public class ConfigUtil2 {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
 
             transformer.transform(new DOMSource(doc), new StreamResult(stringWriter));
+
             xmlString = stringWriter.toString();
 
-            // Method 2
-            //            Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            //            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            //            //initialize StreamResult with File object to save to file
-            //            StreamResult result = new StreamResult(new StringWriter());
-            //            DOMSource source = new DOMSource(doc);
-            //            transformer.transform(source, result);
-            //            xmlString = result.getWriter().toString();
-
-            System.out.println("+++++++++++++++++");
-            System.out.println(xmlString);
-            System.out.println("+++++++++++++++++");
         } catch (Exception ex) {
-            //            throw new RuntimeException("Error converting to String", ex);
-            System.out.println("xml string: " + xmlString);
+            logger.warning("Exception occurred while converting doc to string: " + ex);
         }
         return xmlString;
     }
-
-    //    public static String prettyFormat(String input, int indent) {
-    //        try {
-    //            Source xmlInput = new StreamSource(new StringReader(input));
-    //            StringWriter stringWriter = new StringWriter();
-    //            StreamResult xmlOutput = new StreamResult(stringWriter);
-    //            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-    //            transformerFactory.setAttribute("indent-number", indent);
-    //            Transformer transformer = transformerFactory.newTransformer();
-    //            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-    //            transformer.transform(xmlInput, xmlOutput);
-    //            return xmlOutput.getWriter().toString();
-    //        } catch (Exception e) {
-    //            throw new RuntimeException(e); // simple exception handling, please review it
-    //        }
-    //    }
 
     private static Map<String, Map<String, String>> readDeploymentFile() {
 
@@ -254,19 +239,24 @@ public class ConfigUtil2 {
 
                 for (Object key : deploymentProperties.keySet()) {
 
-                    String value = deploymentProperties.getProperty(key.toString());
                     int index = key.toString().indexOf("/");
-                    //                    String[] temp = key.toString().split("/");
-                    String fileName = key.toString().substring(0, index);
-                    String xpath = key.toString().substring(index);
 
-                    if (tempPropertiesMap.containsKey(fileName)) {
-                        Map<String, String> tempMap = tempPropertiesMap.get(fileName);
-                        tempMap.put(xpath, value);
+                    if (index != -1) {
+                        String fileName = key.toString().substring(0, index);
+                        String xpath = key.toString().substring(index);
+
+                        String value = deploymentProperties.getProperty(key.toString());
+
+                        if (tempPropertiesMap.containsKey(fileName)) {
+                            Map<String, String> tempMap = tempPropertiesMap.get(fileName);
+                            tempMap.put(xpath, value);
+                        } else {
+                            Map<String, String> tempMap = new HashMap<String, String>();
+                            tempMap.put(xpath, value);
+                            tempPropertiesMap.put(fileName, tempMap);
+                        }
                     } else {
-                        Map<String, String> tempMap = new HashMap<String, String>();
-                        tempMap.put(xpath, value);
-                        tempPropertiesMap.put(fileName, tempMap);
+                        logger.warning("No path specified in the config: " + key);
                     }
                 }
 

@@ -52,6 +52,9 @@ public class ConfigUtil2Test {
     @Test
     public void getConfig2() {
 
+        String newTenant = ConfigUtil2.getConfig("[carbon.yml]/configs/tenant");
+        String  newPort = ConfigUtil2.getConfig("[carbon.yml]/configs/transports/transport/port");
+        System.out.println();
     }
 
 }

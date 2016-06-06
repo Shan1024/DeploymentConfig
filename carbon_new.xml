@@ -2,7 +2,7 @@
 <configs>
     <transports>
         <transport>
-            <port>${env:http.port}</port>
+            <port>1212</port>
             <name>netty</name>
         </transport>
     </transports>
