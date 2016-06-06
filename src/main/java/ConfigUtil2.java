@@ -69,7 +69,7 @@ public class ConfigUtil2 {
             //            System.out.println(out.toString());   //Prints the string content read from input stream
             bufferedReader.close();
 
-            config = parseFile(out.toString(), fileName, configFileFormat);
+            config = parseFile(out.toString(), configFileFormat);
             config = applyNewConfigs(config, fileName);
 
         } catch (FileNotFoundException e) {
@@ -85,7 +85,7 @@ public class ConfigUtil2 {
         return (T) "";
     }
 
-    private static String parseFile(String data, String fileName, ConfigFileFormat configFileFormat) {
+    private static String parseFile(String data, ConfigFileFormat configFileFormat) {
 
         String convertedConfig = "";
 
@@ -94,7 +94,7 @@ public class ConfigUtil2 {
                 convertedConfig = data;
                 break;
             case YML:
-                convertedConfig = parseYML(data, fileName);
+                convertedConfig = parseYML(data);
                 break;
             case PROPERTIES:
                 convertedConfig = parseProperties(data);
@@ -105,7 +105,7 @@ public class ConfigUtil2 {
         return convertedConfig;
     }
 
-    private static String parseYML(String data, String fileName) {
+    private static String parseYML(String data) {
         String jsonString = convertToJson(data);
         String xmlString = convertToXML(jsonString);
         System.out.println("xmlString: " + xmlString);

@@ -2,27 +2,25 @@
 <configs>
     <transports>
         <transport>
+            <port>${env:http.port}</port>
             <name>netty</name>
         </transport>
+    </transports>
+    <transports>
         <transport>
-            <name>xyz</name>
+            <port>9090</port>
+            <name>abc</name>
         </transport>
     </transports>
-    <name>${sys.name}</name>
+    <name>${sys:user.name}</name>
     <logging>
         <enable>false</enable>
     </logging>
     <id>myid</id>
     <ports>
         <offset>0</offset>
-        <https>
-            <backup>
-                <port>456</port>
-            </backup>
-            <port>123</port>
-        </https>
     </ports>
-    <version>${env.version}</version>
+    <version>${env:carbon.version}</version>
     <tenant>shanm</tenant>
     <deployment>
         <mode>scheduled</mode>

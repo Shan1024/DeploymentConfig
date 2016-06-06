@@ -1,18 +1,17 @@
 id: myid          #Value to uniquely identify a server
-name: ${sys.name}        #Server Name
-version: ${env.version}  #Server Version
+name: ${sys:user.name}        #Server Name
+version: ${env:carbon.version}  #Server Version
 tenant: default          #Tenant Name
 ports:
   offset: 0
-  https:
-    port: 123
-    backup:
-      port: 456
 deployment:
   mode: scheduled
 transports:
-  transport:
-    - name: netty
-    - name: xyz
+  - transport:
+      name: netty
+      port: 8080
+  - transport:
+      name: xyz
+      port: 9090
 logging:
   enable: false

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!--
  Copyright (c) 2015, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
 
@@ -13,21 +13,17 @@
  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  See the License for the specific language governing permissions and
  limitations under the License.
--->
-
-<Configuration>
+--><Configuration>
     <Appenders>
 
-        <RandomAccessFile name="RandomAccessFile1" fileName="${sys:carbon.home}/logs/carbon.log"
-                          immediateFlush="false" append="false">
+        <RandomAccessFile append="false" fileName="${sys:carbon.home}/logs/carbon.log" immediateFlush="false" name="newName">
             <PatternLayout>
-                <Pattern>[%d] %5p {%c} - %m%ex%n</Pattern>
+                <Pattern>new Pattern1</Pattern>
             </PatternLayout>
         </RandomAccessFile>
-        <RandomAccessFile name="RandomAccessFile2" fileName="${sys:carbon.home}/logs/carbon.log"
-                          immediateFlush="false" append="false">
+        <RandomAccessFile append="false" fileName="${sys:carbon.home}/logs/carbon.log" immediateFlush="false" name="RandomAccessFile2">
             <PatternLayout>
-                <Pattern>[%d] %5p {%c} - %m%ex%n</Pattern>
+                <Pattern>new Pattern2</Pattern>
             </PatternLayout>
         </RandomAccessFile>
         <Console name="CARBON_CONSOLE" target="SYSTEM_OUT">
@@ -37,7 +33,7 @@
     </Appenders>
     <Loggers>
 
-        <AsyncLogger name="com.foo.Bar" level="trace" includeLocation="true">
+        <AsyncLogger includeLocation="true" level="trace" name="com.foo.Bar">
             <AppenderRef ref="RandomAccessFile"/>
         </AsyncLogger>
 
