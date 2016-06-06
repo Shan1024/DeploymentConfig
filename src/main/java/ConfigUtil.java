@@ -43,6 +43,25 @@ public final class ConfigUtil {
 
     }
 
+    private static String convertToJson(String yamlString) {
+        Yaml yaml = new Yaml();
+        Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
+
+        JSONObject jsonObject = new JSONObject(map);
+        return jsonObject.toString();
+    }
+
+    private static String convertToXML(String jsonString) {
+        String xmlString = null;
+        try {
+            JSONObject json = new JSONObject(jsonString);
+            xmlString = XML.toString(json);
+        } catch (JSONException e) {
+
+        }
+        return xmlString;
+    }
+
     /**
      * This method will update the values of a given map with the values found with the filename prefix in
      * deployment.properties file.
@@ -129,7 +148,7 @@ public final class ConfigUtil {
         if (deploymentPropertiesMap.containsKey(fileName)) {
             Map valuesMap = deploymentPropertiesMap.get(fileName);
             if (valuesMap.containsKey(xpath)) {
-                newValue = (T)valuesMap.get(xpath);
+                newValue = (T) valuesMap.get(xpath);
             }
         } else {
             logger.info("No new configs found for " + fileName + " in " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file.");
@@ -139,13 +158,13 @@ public final class ConfigUtil {
             return defaultValue;
         } else {
             //Need to cast the values
-//            if (canParseToInt(newValue)) {
-//                newValue = Integer.parseInt(newValue.toString());
-//            } else if (canParseToDouble(newValue)) {
-//                newValue = Double.parseDouble(newValue.toString());
-//            } else if (canParseToBoolean(newValue)) {
-//                newValue = Boolean.parseBoolean(newValue.toString());
-//            }
+            //            if (canParseToInt(newValue)) {
+            //                newValue = Integer.parseInt(newValue.toString());
+            //            } else if (canParseToDouble(newValue)) {
+            //                newValue = Double.parseDouble(newValue.toString());
+            //            } else if (canParseToBoolean(newValue)) {
+            //                newValue = Boolean.parseBoolean(newValue.toString());
+            //            }
 
             return newValue;
         }
@@ -175,27 +194,27 @@ public final class ConfigUtil {
     }
 
     //todo
-//    private static String convertXMLToYAML(String xmlString) {
-//
-//        String yamlString = "";
-//
-//        try {
-//            JSONObject xmlJSONObj = XML
-//                    .toJSONObject("<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>");
-//            String jsonPrettyPrintString = xmlJSONObj.toString();
-//            System.out.println(jsonPrettyPrintString);
-//
-//            Yaml yaml = new Yaml();
-//
-//            Object yamlObj = yaml.load(jsonPrettyPrintString);
-//            System.out.println(yamlObj);
-//
-//        } catch (JSONException e) {
-//
-//        }
-//
-//        return yamlString;
-//    }
+    //    private static String convertXMLToYAML(String xmlString) {
+    //
+    //        String yamlString = "";
+    //
+    //        try {
+    //            JSONObject xmlJSONObj = XML
+    //                    .toJSONObject("<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>");
+    //            String jsonPrettyPrintString = xmlJSONObj.toString();
+    //            System.out.println(jsonPrettyPrintString);
+    //
+    //            Yaml yaml = new Yaml();
+    //
+    //            Object yamlObj = yaml.load(jsonPrettyPrintString);
+    //            System.out.println(yamlObj);
+    //
+    //        } catch (JSONException e) {
+    //
+    //        }
+    //
+    //        return yamlString;
+    //    }
 
     //todo
     //    public static Map replaceAllPlaceholders(Map map) {

@@ -11,9 +11,8 @@ ports:
 deployment:
   mode: scheduled
 transports:
-- transport:
-    name: netty
-- transport:
-    name: xyz
+  transport:
+    - name: netty
+    - name: xyz
 logging:
   enable: false

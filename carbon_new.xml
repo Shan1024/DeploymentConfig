@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configs>
+    <transports>
+        <transport>
+            <name>netty</name>
+        </transport>
+        <transport>
+            <name>xyz</name>
+        </transport>
+    </transports>
+    <name>${sys.name}</name>
+    <logging>
+        <enable>false</enable>
+    </logging>
+    <id>myid</id>
+    <ports>
+        <offset>0</offset>
+        <https>
+            <backup>
+                <port>456</port>
+            </backup>
+            <port>123</port>
+        </https>
+    </ports>
+    <version>${env.version}</version>
+    <tenant>shanm</tenant>
+    <deployment>
+        <mode>scheduled</mode>
+    </deployment>
+</configs>
