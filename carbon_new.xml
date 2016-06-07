@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<configs>
+<configurations>
     <transports>
         <transport>
-            <port>1212</port>
+            <port>8888</port>
             <name>netty</name>
         </transport>
     </transports>
@@ -25,4 +25,4 @@
     <deployment>
         <mode>scheduled</mode>
     </deployment>
-</configs>
+</configurations>

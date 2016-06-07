@@ -11,11 +11,10 @@ import org.yaml.snakeyaml.Yaml;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -26,14 +25,15 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
 
-public class ConfigUtil2 {
+public class ConfigUtil {
 
-    private static Logger logger = Logger.getLogger(ConfigUtil2.class.getName());
+    private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
-    public static final String XML_ROOT = "configs";
+    public static final String YML_ROOT = "configurations";
+    public static final String PROPERTIES_ROOT = "configurations";
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
 
-    private ConfigUtil2() {
+    private ConfigUtil() {
 
     }
 
@@ -46,6 +46,7 @@ public class ConfigUtil2 {
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
+
         return config;
     }
 
@@ -53,29 +54,39 @@ public class ConfigUtil2 {
 
         String config = "";
         try {
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
-            StringBuilder out = new StringBuilder();
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                out.append(line + "\n");
-            }
-            bufferedReader.close();
 
-            config = parseFile(out.toString(), configFileFormat);
+            if (configFileFormat != ConfigFileFormat.PROPERTIES) {
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+                StringBuilder stringBuilder = new StringBuilder();
+                String line;
+                while ((line = bufferedReader.readLine()) != null) {
+                    stringBuilder.append(line + "\n");
+                }
+                bufferedReader.close();
+
+                //Convert the file to XML format
+                config = convertFormat(stringBuilder.toString(), configFileFormat);
+            } else {
+                //Convert the properties file to XML format
+                config = convertPropertiesToXml(inputStream);
+            }
+
+            //Apply the new configs
             config = applyNewConfigs(config, fileName);
 
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            logger.warning("File not found: " + e);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.warning("IO Ex: " + e);
         }
 
         return config;
     }
 
-    public static <T> T getConfig(String key) {
+    public static String getConfig(String key) {
 
-        T returnValue = null;
+        String returnValue = null;
+
         int index = key.toString().indexOf("/");
 
         if (index != -1) {
@@ -84,20 +95,17 @@ public class ConfigUtil2 {
             if (deploymentPropertiesMap.containsKey(fileName)) {
                 Map<String, String> configMap = deploymentPropertiesMap.get(fileName);
                 if (configMap.containsKey(xpath)) {
-                    //                    try {
-                    returnValue = (T) configMap.get(xpath);
-                    //                    } catch (ClassCastException e) {
-                    //                        logger.warning("Error: " + e);
-                    //                    }
+                    returnValue = configMap.get(xpath);
                 }
             } else {
                 logger.warning(xpath + " was not found");
             }
         }
+
         return returnValue;
     }
 
-    private static String parseFile(String data, ConfigFileFormat configFileFormat) {
+    private static String convertFormat(String data, ConfigFileFormat configFileFormat) {
 
         String convertedConfig = "";
 
@@ -106,26 +114,48 @@ public class ConfigUtil2 {
                 convertedConfig = data;
                 break;
             case YML:
-                convertedConfig = parseYML(data);
+                convertedConfig = convertYmlToXml(data);
                 break;
-            case PROPERTIES:
-                convertedConfig = parseProperties(data);
-                break;
+            //            case PROPERTIES:
+            //                convertedConfig = convertPropertiesToXml(data);
+            //                break;
             default:
-                break;
+                logger.warning("Unsupported file format: " + configFileFormat);
         }
+
         return convertedConfig;
     }
 
-    private static String parseYML(String data) {
-        String jsonString = convertToJson(data);
-        String xmlString = convertToXML(jsonString);
-        System.out.println("xmlString: " + xmlString);
+    private static String convertYmlToXml(String data) {
+
+        //Convert Yaml to Json
+        String jsonString = convertYamlToJson(data);
+
+        //Convert Json to Xml
+        String xmlString = convertJsonToXML(jsonString);
+
+        logger.info("xmlString: " + xmlString);
         return xmlString;
     }
 
-    private static String parseProperties(String data) {
-        return data;
+    //todo
+    private static String convertPropertiesToXml(InputStream inputStream) {
+
+        String xmlString = "";
+
+        Properties deploymentProperties = new Properties();
+        try {
+            deploymentProperties.load(inputStream);
+
+            for (Object key : deploymentProperties.keySet()) {
+                xmlString = xmlString + "<" + key + ">" + deploymentProperties.get(key) + "</" + key + ">";
+            }
+
+        } catch (IOException e) {
+            logger.warning("Ex: " + e);
+        }
+        xmlString = "<" + PROPERTIES_ROOT + ">" + xmlString + "</" + PROPERTIES_ROOT + ">";
+        return prettyFormat(xmlString);
     }
 
     private static String applyNewConfigs(String xmlString, String fileName) {
@@ -138,9 +168,9 @@ public class ConfigUtil2 {
             Map<String, String> newConfigs = deploymentPropertiesMap.get(formattedFileName);
 
             DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder docBuilder = null;
+
             try {
-                docBuilder = docBuilderFactory.newDocumentBuilder();
+                DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
                 Document doc = docBuilder.parse(new InputSource(new StringReader(xmlString)));
 
                 XPath xPath = XPathFactory.newInstance().newXPath();
@@ -160,14 +190,15 @@ public class ConfigUtil2 {
                 updatedString = convertXMLtoString(doc);
 
             } catch (ParserConfigurationException e) {
-                System.out.println(e);
+                logger.warning("Ex: " + e);
             } catch (SAXException e) {
-                System.out.println(e);
+                logger.warning("Ex: " + e);
             } catch (IOException e) {
-                System.out.println(e);
+                logger.warning("Ex: " + e);
             } catch (XPathExpressionException e) {
-                System.out.println(e);
+                logger.warning("Ex: " + e);
             }
+
         } else {
             logger.info("New configurations for " + formattedFileName + " was not found in "
                     + DEPLOYMENT_PROPERTIES_FILE_NAME);
@@ -176,24 +207,23 @@ public class ConfigUtil2 {
         return updatedString;
     }
 
-    private static String convertToJson(String yamlString) {
+    private static String convertYamlToJson(String yamlString) {
         Yaml yaml = new Yaml();
         Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
-
         JSONObject jsonObject = new JSONObject(map);
         return jsonObject.toString();
     }
 
-    private static String convertToXML(String jsonString) {
-        String xmlString = null;
+    private static String convertJsonToXML(String jsonString) {
+        String xmlString = "";
         try {
             JSONObject json = new JSONObject(jsonString);
             xmlString = XML.toString(json);
         } catch (JSONException e) {
-
+            logger.warning("Ex: " + e);
         }
         //Need to add a root element
-        return "<" + XML_ROOT + ">" + xmlString + "</" + XML_ROOT + ">";
+        return "<" + YML_ROOT + ">" + xmlString + "</" + YML_ROOT + ">";
     }
 
     public static String convertXMLtoString(Document doc) {
@@ -217,6 +247,30 @@ public class ConfigUtil2 {
 
         } catch (Exception ex) {
             logger.warning("Exception occurred while converting doc to string: " + ex);
+        }
+        return xmlString;
+    }
+
+    public static String prettyFormat(String input) {
+
+        String xmlString = "";
+        try {
+            Source xmlInput = new StreamSource(new StringReader(input));
+            StringWriter stringWriter = new StringWriter();
+            StreamResult xmlOutput = new StreamResult(stringWriter);
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformerFactory.setAttribute("indent-number", 4);
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.transform(xmlInput, xmlOutput);
+            xmlString = xmlOutput.getWriter().toString();
+        } catch (TransformerConfigurationException e) {
+            logger.info("TransformerConfigurationException: " + e);
+        } catch (TransformerException e) {
+            logger.info("TransformerException: " + e);
         }
         return xmlString;
     }

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configurations>
+    <osgi.instance.area>file:profiles/${profile}/workspace_new</osgi.instance.area>
+    <osgi.install.area>file:profiles/${profile}</osgi.install.area>
+    <carbon.osgi.framework>file:plugins/org.eclipse.osgi_3.10.2.v20150203-1939.jar</carbon.osgi.framework>
+    <carbon.initial.osgi.bundles>file:plugins/org.eclipse.osgi.services_3.4.0.v20140312-2051.jar@1:true,file:plugins/org.ops4j.pax.logging.pax-logging-api_1.8.5.jar@2:true,file:plugins/org.ops4j.pax.logging.pax-logging-log4j2_1.8.5.jar@2:true,file:plugins/org.eclipse.equinox.cm_1.1.0.v20131021-1936.jar@2:true,file:plugins/org.wso2.carbon.base_5.1.0.SNAPSHOT.jar@2:true,file:plugins/org.eclipse.equinox.simpleconfigurator_1.1.0.v20131217-1203.jar@3:true</carbon.initial.osgi.bundles>
+    <carbon.osgi.repository>file:osgi</carbon.osgi.repository>
+    <osgi.clean>true</osgi.clean>
+    <org.osgi.framework.bundle.parent>framework</org.osgi.framework.bundle.parent>
+    <org.eclipse.equinox.simpleconfigurator.useReference>true</org.eclipse.equinox.simpleconfigurator.useReference>
+    <org.eclipse.equinox.simpleconfigurator.configUrl>file:org.eclipse.equinox.simpleconfigurator/bundles.info</org.eclipse.equinox.simpleconfigurator.configUrl>
+    <osgi.configuration.area>file:profiles/${profile}/configuration</osgi.configuration.area>
+    <eclipse.p2.data.area>file:p2</eclipse.p2.data.area>
+    <org.osgi.framework.startlevel.beginning>10</org.osgi.framework.startlevel.beginning>
+</configurations>
