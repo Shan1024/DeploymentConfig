@@ -44,7 +44,7 @@ public class ConfigUtil {
             FileInputStream fileInputStream = new FileInputStream(file);
             config = getConfig(fileInputStream, file.getName(), configFileFormat);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            logger.warning("Ex: " + e);
         }
 
         return config;
@@ -65,7 +65,7 @@ public class ConfigUtil {
                 bufferedReader.close();
 
                 //Convert the file to XML format
-                config = convertFormat(stringBuilder.toString(), configFileFormat);
+                config = convertToXml(stringBuilder.toString(), configFileFormat);
             } else {
                 //Convert the properties file to XML format
                 config = convertPropertiesToXml(inputStream);
@@ -83,6 +83,7 @@ public class ConfigUtil {
         return config;
     }
 
+    //  \${(sys|sec|env)(:\w+)(\.\w+)*} regex to process placeholder values
     public static String getConfig(String key) {
 
         String returnValue = null;
@@ -105,17 +106,18 @@ public class ConfigUtil {
         return returnValue;
     }
 
-    private static String convertFormat(String data, ConfigFileFormat configFileFormat) {
+    private static String convertToXml(String data, ConfigFileFormat configFileFormat) {
 
-        String convertedConfig = "";
+        //No need to convert xml to xml
+        String convertedConfig = data;
 
         switch (configFileFormat) {
-            case XML:
-                convertedConfig = data;
-                break;
             case YML:
-                convertedConfig = convertYmlToXml(data);
+                convertedConfig = convertYamlToXml(data);
                 break;
+            //            case XML:
+            //                convertedConfig = data;
+            //                break;
             //            case PROPERTIES:
             //                convertedConfig = convertPropertiesToXml(data);
             //                break;
@@ -126,19 +128,6 @@ public class ConfigUtil {
         return convertedConfig;
     }
 
-    private static String convertYmlToXml(String data) {
-
-        //Convert Yaml to Json
-        String jsonString = convertYamlToJson(data);
-
-        //Convert Json to Xml
-        String xmlString = convertJsonToXML(jsonString);
-
-        logger.info("xmlString: " + xmlString);
-        return xmlString;
-    }
-
-    //todo
     private static String convertPropertiesToXml(InputStream inputStream) {
 
         String xmlString = "";
@@ -154,8 +143,64 @@ public class ConfigUtil {
         } catch (IOException e) {
             logger.warning("Ex: " + e);
         }
+        //Need to add a root element
         xmlString = "<" + PROPERTIES_ROOT + ">" + xmlString + "</" + PROPERTIES_ROOT + ">";
-        return prettyFormat(xmlString);
+        return prettyFormatXml(xmlString);
+    }
+
+    private static String prettyFormatXml(String input) {
+
+        String xmlString = "";
+        try {
+            Source xmlInput = new StreamSource(new StringReader(input));
+            StringWriter stringWriter = new StringWriter();
+            StreamResult xmlOutput = new StreamResult(stringWriter);
+            TransformerFactory transformerFactory = TransformerFactory.newInstance();
+            transformerFactory.setAttribute("indent-number", 4);
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
+            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
+            transformer.transform(xmlInput, xmlOutput);
+            xmlString = xmlOutput.getWriter().toString();
+        } catch (TransformerConfigurationException e) {
+            logger.info("TransformerConfigurationException: " + e);
+        } catch (TransformerException e) {
+            logger.info("TransformerException: " + e);
+        }
+        return xmlString;
+    }
+
+    private static String convertYamlToXml(String data) {
+
+        //Convert Yaml to Json
+        String jsonString = convertYamlToJson(data);
+
+        //Convert Json to Xml
+        String xmlString = convertJsonToXML(jsonString);
+
+        logger.info("xmlString: " + xmlString);
+        return xmlString;
+    }
+
+    private static String convertYamlToJson(String yamlString) {
+        Yaml yaml = new Yaml();
+        Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
+        JSONObject jsonObject = new JSONObject(map);
+        return jsonObject.toString();
+    }
+
+    private static String convertJsonToXML(String jsonString) {
+        String xmlString = "";
+        try {
+            JSONObject json = new JSONObject(jsonString);
+            xmlString = XML.toString(json);
+        } catch (JSONException e) {
+            logger.warning("Ex: " + e);
+        }
+        //Need to add a root element
+        return "<" + YML_ROOT + ">" + xmlString + "</" + YML_ROOT + ">";
     }
 
     private static String applyNewConfigs(String xmlString, String fileName) {
@@ -207,25 +252,6 @@ public class ConfigUtil {
         return updatedString;
     }
 
-    private static String convertYamlToJson(String yamlString) {
-        Yaml yaml = new Yaml();
-        Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
-        JSONObject jsonObject = new JSONObject(map);
-        return jsonObject.toString();
-    }
-
-    private static String convertJsonToXML(String jsonString) {
-        String xmlString = "";
-        try {
-            JSONObject json = new JSONObject(jsonString);
-            xmlString = XML.toString(json);
-        } catch (JSONException e) {
-            logger.warning("Ex: " + e);
-        }
-        //Need to add a root element
-        return "<" + YML_ROOT + ">" + xmlString + "</" + YML_ROOT + ">";
-    }
-
     public static String convertXMLtoString(Document doc) {
 
         String xmlString = "";
@@ -247,30 +273,6 @@ public class ConfigUtil {
 
         } catch (Exception ex) {
             logger.warning("Exception occurred while converting doc to string: " + ex);
-        }
-        return xmlString;
-    }
-
-    public static String prettyFormat(String input) {
-
-        String xmlString = "";
-        try {
-            Source xmlInput = new StreamSource(new StringReader(input));
-            StringWriter stringWriter = new StringWriter();
-            StreamResult xmlOutput = new StreamResult(stringWriter);
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            transformerFactory.setAttribute("indent-number", 4);
-            Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
-            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-            transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-            transformer.transform(xmlInput, xmlOutput);
-            xmlString = xmlOutput.getWriter().toString();
-        } catch (TransformerConfigurationException e) {
-            logger.info("TransformerConfigurationException: " + e);
-        } catch (TransformerException e) {
-            logger.info("TransformerException: " + e);
         }
         return xmlString;
     }

@@ -24,12 +24,21 @@
                 <Pattern>[%d] %5p {%c} - %m%ex%n</Pattern>
             </PatternLayout>
         </RandomAccessFile>
+
         <RandomAccessFile name="RandomAccessFile2" fileName="${sys:carbon.home}/logs/carbon.log"
                           immediateFlush="false" append="false">
             <PatternLayout>
                 <Pattern>[%d] %5p {%c} - %m%ex%n</Pattern>
             </PatternLayout>
         </RandomAccessFile>
+
+        <RandomAccessFile name="RandomAccessFile3" fileName="${sys:carbon.home}/logs/carbon.log"
+                          immediateFlush="false" append="false">
+            <PatternLayout>
+                <Pattern>[%d] %5p {%c} - %m%ex%n</Pattern>
+            </PatternLayout>
+        </RandomAccessFile>
+
         <Console name="CARBON_CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d] %5p {%c} - %m%ex%n"/>
         </Console>

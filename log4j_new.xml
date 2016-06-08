@@ -16,16 +16,24 @@
 --><Configuration>
     <Appenders>
 
-        <RandomAccessFile append="false" fileName="${sys:carbon.home}/logs/carbon.log" immediateFlush="false" name="newName">
+        <RandomAccessFile append="false" fileName="${sys:carbon.home}/logs/carbon.log" immediateFlush="false" name="RandomAccessFile1">
             <PatternLayout>
-                <Pattern>new Pattern1</Pattern>
+                <Pattern>New_Pattern1</Pattern>
             </PatternLayout>
         </RandomAccessFile>
+
         <RandomAccessFile append="false" fileName="${sys:carbon.home}/logs/carbon.log" immediateFlush="false" name="RandomAccessFile2">
             <PatternLayout>
-                <Pattern>new Pattern2</Pattern>
+                <Pattern>New_Pattern2</Pattern>
             </PatternLayout>
         </RandomAccessFile>
+
+        <RandomAccessFile append="false" fileName="${sys:carbon.home}/logs/carbon.log" immediateFlush="false" name="New_Name">
+            <PatternLayout>
+                <Pattern>[%d] %5p {%c} - %m%ex%n</Pattern>
+            </PatternLayout>
+        </RandomAccessFile>
+
         <Console name="CARBON_CONSOLE" target="SYSTEM_OUT">
             <PatternLayout pattern="[%d] %5p {%c} - %m%ex%n"/>
         </Console>
