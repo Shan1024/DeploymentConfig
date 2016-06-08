@@ -13,7 +13,6 @@ public class ConfigUtilTest {
 
         File file = new File("carbon.yml");
         String config = ConfigUtil.getConfig(file, ConfigFileFormat.YML);
-//        System.out.println("Config1: \n" + config);
 
         FileWriter fileWriter;
         try {
@@ -34,7 +33,6 @@ public class ConfigUtilTest {
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
             String config = ConfigUtil.getConfig(fileInputStream, file.getName(), ConfigFileFormat.XML);
-//            System.out.println("Config2: \n" + config);
 
             FileWriter fileWriter;
             try {
@@ -59,7 +57,6 @@ public class ConfigUtilTest {
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
             String config = ConfigUtil.getConfig(fileInputStream, file.getName(), ConfigFileFormat.PROPERTIES);
-            //            System.out.println("Config2: \n" + config);
 
             FileWriter fileWriter;
             try {
@@ -79,7 +76,6 @@ public class ConfigUtilTest {
 
     @Test
     public void getConfig3() {
-
         String newTenant = ConfigUtil.getConfig("[carbon.yml]/configurations/tenant");
         Assert.assertEquals(newTenant, "shanm");
         int newPort = Integer.parseInt(ConfigUtil.getConfig("[carbon.yml]/configurations/transports/transport/port"));
