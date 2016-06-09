@@ -1,4 +1,4 @@
-package FileTypes;
+package ConfigFileTypes;
 
 /**
  * Created by shan on 6/9/16.

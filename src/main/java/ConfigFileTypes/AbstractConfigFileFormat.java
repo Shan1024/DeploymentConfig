@@ -1,9 +1,9 @@
-package FileTypes;
+package ConfigFileTypes;
 
 /**
  * Created by shan on 6/9/16.
  */
-public abstract class BaseObject {
+public abstract class AbstractConfigFileFormat {
 
     private String value;
 
