@@ -3,15 +3,14 @@ import FileTypes.XML;
 import FileTypes.YAML;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
 import java.io.*;
 
 /**
- * Created by shan on 6/6/16.
+ * Created by shan on 6/9/16.
  */
-public class ConfigUtilTest {
+public class ConfigUtilSamples {
 
-    @Test
+    //Using File
     public void getConfig() {
 
         File file = new File("carbon.yml");
@@ -29,7 +28,7 @@ public class ConfigUtilTest {
 
     }
 
-    @Test
+    //Using FileStream
     public void getConfig1() {
 
         File file = new File("log4j2.xml");
@@ -53,7 +52,6 @@ public class ConfigUtilTest {
 
     }
 
-    @Test
     public void getConfig2() {
 
         File file = new File("launch.properties");
@@ -77,10 +75,8 @@ public class ConfigUtilTest {
 
     }
 
-    @Test
     public void getConfig3() {
         String newTenant = ConfigUtil.getConfig("[carbon.yml]/tenant");
         Assert.assertEquals(newTenant, "shanm");
     }
-
 }

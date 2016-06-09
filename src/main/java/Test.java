@@ -11,6 +11,34 @@ import java.util.Map;
 /**
  * Created by shan on 6/9/16.
  */
+
+//    public void test() {
+//                ObjectMapper wrapping = rootMapper();
+//
+//                String json = wrapping.writer().withRootName("something").writeValueAsString(new Bean());
+//                //        assertEquals("{\"something\":{\"a\":3}}", json);
+//                json = wrapping.writer().withRootName("").writeValueAsString(new Bean());
+//                //        assertEquals("{\"a\":3}", json);
+//
+////        String TEST_XML_STRING = "<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>";
+////
+////        try {
+////            JSONObject xmlJSONObj = FileTypes.XML.toJSONObject(TEST_XML_STRING);
+////            String jsonPrettyPrintString = xmlJSONObj.toString(4);
+////
+////            System.out.println(jsonPrettyPrintString);
+////        } catch (JSONException je) {
+////            System.out.println(je.toString());
+////        }
+//
+//    }
+//
+//    private ObjectMapper rootMapper() {
+//        ObjectMapper mapper = new ObjectMapper();
+//        mapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+//        return mapper;
+//    }
+
 public class Test {
     public static void main(String[] args) {
         try {
@@ -41,6 +69,7 @@ public class Test {
 
             Map map = null;
 
+            System.out.println("hello "+null);
             try {
                 JSONObject xmlJSONObj = XML.toJSONObject(xmlString);
                 String jsonPrettyPrintString = xmlJSONObj.toString();
@@ -55,6 +84,8 @@ public class Test {
 
                 map = (Map) map.get("Configuration");
 
+                String yamlString = yaml.dumpAsMap(map);
+                System.out.println("yamlString:\n" + yamlString);
                 ObjectMapper jsonMapper = new ObjectMapper();
                 String json = jsonMapper.writeValueAsString(map);
                 System.out.println(json);
