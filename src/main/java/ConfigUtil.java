@@ -28,10 +28,10 @@ import java.util.logging.Logger;
 public class ConfigUtil {
 
     private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
-    public static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
-    public static final String YML_ROOT = "configurations";
-    public static final String PROPERTIES_ROOT = "configurations";
+    private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
+    private static final String ROOT_ELEMENT = "configurations";
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
+    private static final String FILE_REGEX = "\\[.+\\.(yml|properties)\\]";
 
     private ConfigUtil() {
 
@@ -40,7 +40,6 @@ public class ConfigUtil {
     public static String getConfig(File file, ConfigFileFormat configFileFormat) {
 
         String newConfigXmlString = "";
-
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
             newConfigXmlString = getConfig(fileInputStream, file.getName(), configFileFormat);
@@ -56,7 +55,6 @@ public class ConfigUtil {
         String newConfigXmlString = "";
 
         try {
-
             if (configFileFormat != ConfigFileFormat.PROPERTIES) {
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
                 StringBuilder stringBuilder = new StringBuilder();
@@ -65,11 +63,10 @@ public class ConfigUtil {
                     stringBuilder.append(line).append("\n");
                 }
                 bufferedReader.close();
-
-                //Convert the file to XML format
+                //Convert the file to FileTypes.XML format
                 newConfigXmlString = convertToXml(stringBuilder.toString(), configFileFormat);
             } else {
-                //Convert the properties file to XML format
+                //Convert the properties file to FileTypes.XML format
                 newConfigXmlString = convertPropertiesToXml(inputStream);
             }
 
@@ -85,15 +82,13 @@ public class ConfigUtil {
         return newConfigXmlString;
     }
 
-    //  \${(sys|sec|env)(:\w+)(\.\w+)*} regex to process placeholder values
+    //  \${(sys|sec|env)(:\w+)(\.\w+)*} - regex to identify placeholder values
     public static String getConfig(String key) {
 
         String returnValue = null;
 
         int index = key.indexOf("/");
-
         if (index != -1) {
-
             String fileName = key.substring(0, index);
             String xpath = key.substring(index);
 
@@ -108,15 +103,39 @@ public class ConfigUtil {
                 logger.warning(xpath + " was not found");
             }
         }
-
         return returnValue;
     }
 
-    private static String convertToXml(String data, ConfigFileFormat configFileFormat) {
+    //    public void test() {
+    //                ObjectMapper wrapping = rootMapper();
+    //
+    //                String json = wrapping.writer().withRootName("something").writeValueAsString(new Bean());
+    //                //        assertEquals("{\"something\":{\"a\":3}}", json);
+    //                json = wrapping.writer().withRootName("").writeValueAsString(new Bean());
+    //                //        assertEquals("{\"a\":3}", json);
+    //
+    ////        String TEST_XML_STRING = "<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>";
+    ////
+    ////        try {
+    ////            JSONObject xmlJSONObj = FileTypes.XML.toJSONObject(TEST_XML_STRING);
+    ////            String jsonPrettyPrintString = xmlJSONObj.toString(4);
+    ////
+    ////            System.out.println(jsonPrettyPrintString);
+    ////        } catch (JSONException je) {
+    ////            System.out.println(je.toString());
+    ////        }
+    //
+    //    }
+    //
+    //    private ObjectMapper rootMapper() {
+    //        ObjectMapper mapper = new ObjectMapper();
+    //        mapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, true);
+    //        return mapper;
+    //    }
 
+    private static String convertToXml(String data, ConfigFileFormat configFileFormat) {
         //No need to convert xml to xml
         String convertedConfig = data;
-
         switch (configFileFormat) {
             case YML:
                 convertedConfig = convertYamlToXml(data);
@@ -125,7 +144,6 @@ public class ConfigUtil {
                 logger.warning("Unsupported file format: " + configFileFormat);
                 break;
         }
-
         return convertedConfig;
     }
 
@@ -133,10 +151,8 @@ public class ConfigUtil {
 
         //Convert Yaml to Json
         String jsonString = convertYamlToJson(data);
-
         //Convert Json to Xml
         String xmlString = convertJsonToXML(jsonString);
-
         logger.info("xmlString: " + xmlString);
         return xmlString;
     }
@@ -144,16 +160,10 @@ public class ConfigUtil {
     private static String convertYamlToJson(String yamlString) {
 
         String jsonString = "";
-
-        try {
-            Yaml yaml = new Yaml();
-            Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
-            JSONObject jsonObject = new JSONObject(map);
-            jsonString = jsonObject.toString();
-        } catch (ClassCastException e) {
-            logger.warning("Ex: " + e);
-        }
-
+        Yaml yaml = new Yaml();
+        Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
+        JSONObject jsonObject = new JSONObject(map);
+        jsonString = jsonObject.toString();
         return jsonString;
     }
 
@@ -167,17 +177,14 @@ public class ConfigUtil {
         } catch (JSONException e) {
             logger.warning("Ex: " + e);
         }
-
         //Need to add a root element
-        xmlString = createXmlElement(YML_ROOT, xmlString);
-
+        xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
         return xmlString;
     }
 
     private static String convertPropertiesToXml(InputStream inputStream) {
 
         String xmlString = "";
-
         Properties deploymentProperties = new Properties();
         try {
             deploymentProperties.load(inputStream);
@@ -188,7 +195,7 @@ public class ConfigUtil {
             logger.warning("Ex: " + e);
         }
         //Need to add a root element
-        xmlString = createXmlElement(PROPERTIES_ROOT, xmlString);
+        xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
         return prettyFormatXmlString(xmlString);
     }
 
@@ -204,17 +211,14 @@ public class ConfigUtil {
         if (deploymentPropertiesMap.containsKey(formattedFileName)) {
 
             Map<String, String> newConfigs = deploymentPropertiesMap.get(formattedFileName);
-
             DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 
             try {
                 DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
                 Document doc = docBuilder.parse(new InputSource(new StringReader(xmlString)));
-
                 XPath xPath = XPathFactory.newInstance().newXPath();
 
                 newConfigs.keySet().forEach(key -> {
-
                     logger.info("key: " + key);
                     try {
                         NodeList nodeList = (NodeList) xPath.compile(key).evaluate(doc, XPathConstants.NODESET);
@@ -226,11 +230,8 @@ public class ConfigUtil {
                     } catch (XPathExpressionException e) {
                         logger.warning("Ex: " + e);
                     }
-
                 });
-
                 updatedString = convertXMLtoString(doc);
-
             } catch (ParserConfigurationException | IOException | SAXException e) {
                 logger.warning("Ex: " + e);
             }
@@ -258,20 +259,15 @@ public class ConfigUtil {
         String xmlString = "";
         try {
             StringWriter stringWriter = new StringWriter();
-
             StreamResult xmlOutput = new StreamResult(stringWriter);
-
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
             transformerFactory.setAttribute("indent-number", 4);
-
             Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
-
             transformer.transform(source, xmlOutput);
-
             xmlString = xmlOutput.getWriter().toString();
 
         } catch (Exception ex) {
@@ -291,20 +287,19 @@ public class ConfigUtil {
             File file = new File(DEPLOYMENT_PROPERTIES_FILE_NAME);
 
             if (file.exists()) {
-
                 input = new FileInputStream(file);
-
                 deploymentProperties.load(input);
 
                 deploymentProperties.keySet().forEach(key -> {
-
                     String keyString = key.toString();
-
                     int index = keyString.indexOf("/");
-
                     String fileName = keyString.substring(0, index);
                     String xpath = keyString.substring(index);
                     String value = deploymentProperties.getProperty(keyString);
+
+                    if (fileName.matches(FILE_REGEX)) {
+                        xpath = "/" + ROOT_ELEMENT + xpath;
+                    }
 
                     if (tempPropertiesMap.containsKey(fileName)) {
                         Map<String, String> tempMap = tempPropertiesMap.get(fileName);
@@ -314,9 +309,7 @@ public class ConfigUtil {
                         tempMap.put(xpath, value);
                         tempPropertiesMap.put(fileName, tempMap);
                     }
-
                 });
-
             } else {
                 logger.warning(DEPLOYMENT_PROPERTIES_FILE_NAME + " file not found at " + file.getAbsolutePath());
             }
@@ -332,7 +325,6 @@ public class ConfigUtil {
                 }
             }
         }
-
         return tempPropertiesMap;
     }
 

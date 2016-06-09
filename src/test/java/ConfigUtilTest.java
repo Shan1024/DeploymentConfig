@@ -78,8 +78,6 @@ public class ConfigUtilTest {
     public void getConfig3() {
         String newTenant = ConfigUtil.getConfig("[carbon.yml]/configurations/tenant");
         Assert.assertEquals(newTenant, "shanm");
-        int newPort = Integer.parseInt(ConfigUtil.getConfig("[carbon.yml]/configurations/transports/transport/port"));
-        Assert.assertEquals(newPort, 8888);
     }
 
 }

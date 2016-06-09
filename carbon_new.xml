@@ -2,14 +2,14 @@
 <configurations>
     <transports>
         <transport>
-            <port>8888</port>
+            <port>1212</port>
             <name>netty</name>
         </transport>
     </transports>
     <transports>
         <transport>
-            <port>9090</port>
-            <name>abc</name>
+            <port>8888</port>
+            <name>xyz</name>
         </transport>
     </transports>
     <name>${sys:user.name}</name>
