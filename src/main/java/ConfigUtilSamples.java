@@ -1,8 +1,8 @@
-import FileTypes.PROPERTIES;
-import FileTypes.XML;
-import FileTypes.YAML;
+import ConfigFileTypes.Properties;
+import ConfigFileTypes.XML;
+import ConfigFileTypes.YAML;
 import org.testng.Assert;
-import org.testng.annotations.Test;
+
 import java.io.*;
 
 /**
@@ -57,7 +57,7 @@ public class ConfigUtilSamples {
         File file = new File("launch.properties");
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
-            PROPERTIES configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), PROPERTIES.class);
+            Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
 
             FileWriter fileWriter;
             try {

@@ -1,6 +1,6 @@
-import FileTypes.PROPERTIES;
-import FileTypes.XML;
-import FileTypes.YAML;
+import ConfigFileTypes.Properties;
+import ConfigFileTypes.XML;
+import ConfigFileTypes.YAML;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -12,10 +12,11 @@ import java.io.*;
 public class ConfigUtilTest {
 
     @Test
-    public void getConfig() {
+    public void getConfigYaml() {
 
         File file = new File("carbon.yml");
         YAML configYaml = ConfigUtil.getConfig(file, YAML.class);
+        System.out.println("New YML: \n" + configYaml.getValue());
 
         FileWriter fileWriter;
         try {
@@ -30,12 +31,13 @@ public class ConfigUtilTest {
     }
 
     @Test
-    public void getConfig1() {
+    public void getConfigXml() {
 
         File file = new File("log4j2.xml");
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
             XML configXml = ConfigUtil.getConfig(fileInputStream, file.getName(), XML.class);
+            System.out.println("New XML: \n" + configXml.getValue());
 
             FileWriter fileWriter;
             try {
@@ -54,12 +56,13 @@ public class ConfigUtilTest {
     }
 
     @Test
-    public void getConfig2() {
+    public void getConfigProperties() {
 
         File file = new File("launch.properties");
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
-            PROPERTIES configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), PROPERTIES.class);
+            Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
+            System.out.println("New Properties: \n" + configProperties);
 
             FileWriter fileWriter;
             try {
@@ -78,9 +81,17 @@ public class ConfigUtilTest {
     }
 
     @Test
-    public void getConfig3() {
+    public void getConfigs() {
+
         String newTenant = ConfigUtil.getConfig("[carbon.yml]/tenant");
         Assert.assertEquals(newTenant, "shanm");
+
+        String newTransportPort = ConfigUtil.getConfig("[carbon.yml]/transports/transport/port");
+        Assert.assertEquals(newTransportPort, "1212");
+
+        String newTransportPortXYZ = ConfigUtil.getConfig("[carbon.yml]/transports/transport[name='xyz']/port");
+        Assert.assertEquals(newTransportPortXYZ, "8888");
+
     }
 
 }

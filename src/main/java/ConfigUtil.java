@@ -1,5 +1,5 @@
-import FileTypes.BaseObject;
-import FileTypes.YAML;
+import ConfigFileTypes.AbstractConfigFileFormat;
+import ConfigFileTypes.YAML;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
@@ -32,8 +32,8 @@ public class ConfigUtil {
     private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
     private static final String ROOT_ELEMENT = "configurations";
-    private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
     private static final String FILE_REGEX = "\\[.+\\.(yml|properties)\\]";
+    private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
 
     private enum ConfigFileFormat {
         YML, XML, PROPERTIES
@@ -43,7 +43,7 @@ public class ConfigUtil {
 
     }
 
-    public static <T extends BaseObject> T getConfig(File file, Class<T> klass) {
+    public static <T extends AbstractConfigFileFormat> T getConfig(File file, Class<T> klass) {
 
         T newConfigs = null;
         try {
@@ -55,13 +55,13 @@ public class ConfigUtil {
         return newConfigs;
     }
 
-    public static <T extends BaseObject> T getConfig(FileInputStream inputStream, String fileName, Class<T> klass) {
+    public static <T extends AbstractConfigFileFormat> T getConfig(FileInputStream inputStream, String fileName, Class<T> klass) {
 
         String xmlString = "";
         ConfigFileFormat configFileFormat = ConfigFileFormat.XML;
         ;
         try {
-            if (klass.isAssignableFrom(FileTypes.PROPERTIES.class)) {
+            if (klass.isAssignableFrom(ConfigFileTypes.Properties.class)) {
                 //Convert the properties file to XML format
                 xmlString = convertPropertiesToXml(inputStream);
                 configFileFormat = ConfigFileFormat.PROPERTIES;
@@ -75,10 +75,10 @@ public class ConfigUtil {
                 bufferedReader.close();
 
                 //Convert the file to XML format
-                if (klass.isAssignableFrom(FileTypes.XML.class)) {
+                if (klass.isAssignableFrom(ConfigFileTypes.XML.class)) {
                     xmlString = stringBuilder.toString();
                     configFileFormat = ConfigFileFormat.XML;
-                } else if (klass.isAssignableFrom(FileTypes.YAML.class)) {
+                } else if (klass.isAssignableFrom(ConfigFileTypes.YAML.class)) {
                     xmlString = convertToXml(stringBuilder.toString(), ConfigFileFormat.YML);
                     configFileFormat = ConfigFileFormat.YML;
                 }
@@ -93,16 +93,16 @@ public class ConfigUtil {
             logger.warning("IO Ex: " + e);
         }
 
-        //todo convert back
+        //Convert xml back to original format
         String convertedString = convertToOriginalFormat(xmlString, configFileFormat);
 
-        BaseObject baseObject;
-        if (klass.isAssignableFrom(FileTypes.YAML.class)) {
+        AbstractConfigFileFormat baseObject;
+        if (klass.isAssignableFrom(ConfigFileTypes.YAML.class)) {
             baseObject = new YAML();
-        } else if (klass.isAssignableFrom(FileTypes.XML.class)) {
-            baseObject = new FileTypes.XML();
-        } else if (klass.isAssignableFrom(FileTypes.PROPERTIES.class)) {
-            baseObject = new FileTypes.PROPERTIES();
+        } else if (klass.isAssignableFrom(ConfigFileTypes.XML.class)) {
+            baseObject = new ConfigFileTypes.XML();
+        } else if (klass.isAssignableFrom(ConfigFileTypes.Properties.class)) {
+            baseObject = new ConfigFileTypes.Properties();
         } else {
             throw new IllegalArgumentException("Unsupported type " + klass.getTypeName());
         }
@@ -127,7 +127,6 @@ public class ConfigUtil {
     //  \${(sys|sec|env)(:\w+)(\.\w+)*} - regex to identify placeholder values
     public static String getConfig(String key) {
 
-        //todo add root element
         String returnValue = null;
         int index = key.indexOf("/");
         if (index != -1) {
@@ -137,7 +136,6 @@ public class ConfigUtil {
             if (fileName.matches(FILE_REGEX)) {
                 xpath = "/" + ROOT_ELEMENT + xpath;
             }
-
             if (deploymentPropertiesMap.containsKey(fileName)) {
                 Map<String, String> configMap = deploymentPropertiesMap.get(fileName);
                 if (configMap.containsKey(xpath)) {

@@ -23,7 +23,7 @@ import java.util.Map;
 ////        String TEST_XML_STRING = "<?xml version=\"1.0\" ?><test attrib=\"moretest\">Turn this to JSON</test>";
 ////
 ////        try {
-////            JSONObject xmlJSONObj = FileTypes.XML.toJSONObject(TEST_XML_STRING);
+////            JSONObject xmlJSONObj = ConfigFileTypes.XML.toJSONObject(TEST_XML_STRING);
 ////            String jsonPrettyPrintString = xmlJSONObj.toString(4);
 ////
 ////            System.out.println(jsonPrettyPrintString);
