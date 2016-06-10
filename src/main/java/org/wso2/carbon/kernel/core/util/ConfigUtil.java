@@ -1,19 +1,40 @@
-import ConfigFileTypes.AbstractConfigFileFormat;
-import ConfigFileTypes.YAML;
+package org.wso2.carbon.kernel.core.util;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.wso2.carbon.kernel.core.util.configfiletypes.AbstractConfigFileFormat;
+import org.wso2.carbon.kernel.core.util.configfiletypes.Properties;
+import org.wso2.carbon.kernel.core.util.configfiletypes.YAML;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.*;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
@@ -21,13 +42,11 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
-import java.util.logging.Logger;
 
-public class ConfigUtil {
+/**
+ * This util class provide the ability to override configurations in various components using a single file.
+ */
+public final class ConfigUtil {
 
     private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
@@ -55,13 +74,14 @@ public class ConfigUtil {
         return newConfigs;
     }
 
-    public static <T extends AbstractConfigFileFormat> T getConfig(FileInputStream inputStream, String fileName, Class<T> klass) {
+    public static <T extends AbstractConfigFileFormat> T getConfig(FileInputStream inputStream, String fileName,
+            Class<T> klass) {
 
         String xmlString = "";
         ConfigFileFormat configFileFormat = ConfigFileFormat.XML;
         ;
         try {
-            if (klass.isAssignableFrom(ConfigFileTypes.Properties.class)) {
+            if (klass.isAssignableFrom(Properties.class)) {
                 //Convert the properties file to XML format
                 xmlString = convertPropertiesToXml(inputStream);
                 configFileFormat = ConfigFileFormat.PROPERTIES;
@@ -75,10 +95,10 @@ public class ConfigUtil {
                 bufferedReader.close();
 
                 //Convert the file to XML format
-                if (klass.isAssignableFrom(ConfigFileTypes.XML.class)) {
+                if (klass.isAssignableFrom(org.wso2.carbon.kernel.core.util.configfiletypes.XML.class)) {
                     xmlString = stringBuilder.toString();
                     configFileFormat = ConfigFileFormat.XML;
-                } else if (klass.isAssignableFrom(ConfigFileTypes.YAML.class)) {
+                } else if (klass.isAssignableFrom(YAML.class)) {
                     xmlString = convertToXml(stringBuilder.toString(), ConfigFileFormat.YML);
                     configFileFormat = ConfigFileFormat.YML;
                 }
@@ -97,12 +117,12 @@ public class ConfigUtil {
         String convertedString = convertToOriginalFormat(xmlString, configFileFormat);
 
         AbstractConfigFileFormat baseObject;
-        if (klass.isAssignableFrom(ConfigFileTypes.YAML.class)) {
+        if (klass.isAssignableFrom(YAML.class)) {
             baseObject = new YAML();
-        } else if (klass.isAssignableFrom(ConfigFileTypes.XML.class)) {
-            baseObject = new ConfigFileTypes.XML();
-        } else if (klass.isAssignableFrom(ConfigFileTypes.Properties.class)) {
-            baseObject = new ConfigFileTypes.Properties();
+        } else if (klass.isAssignableFrom(org.wso2.carbon.kernel.core.util.configfiletypes.XML.class)) {
+            baseObject = new org.wso2.carbon.kernel.core.util.configfiletypes.XML();
+        } else if (klass.isAssignableFrom(Properties.class)) {
+            baseObject = new Properties();
         } else {
             throw new IllegalArgumentException("Unsupported type " + klass.getTypeName());
         }
@@ -217,7 +237,7 @@ public class ConfigUtil {
 
     private static String convertPropertiesToXml(InputStream inputStream) {
         String xmlString = "";
-        Properties deploymentProperties = new Properties();
+        java.util.Properties deploymentProperties = new java.util.Properties();
 
         try {
             deploymentProperties.load(inputStream);
@@ -277,7 +297,6 @@ public class ConfigUtil {
                             Node firstNode = nodeList.item(0);
                             firstNode.getFirstChild().setNodeValue(newConfigs.get(key));
                         }
-                        System.out.println(nodeList);
                     } catch (XPathExpressionException e) {
                         logger.warning("Ex: " + e);
                     }
@@ -319,8 +338,10 @@ public class ConfigUtil {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.transform(source, xmlOutput);
             xmlString = xmlOutput.getWriter().toString();
-        } catch (Exception ex) {
-            logger.warning("Exception occurred while converting doc to string: " + ex);
+        } catch (TransformerConfigurationException e) {
+            logger.warning("Exception occurred while converting doc to string: " + e);
+        } catch (TransformerException e) {
+            logger.warning("Exception occurred while converting doc to string: " + e);
         }
         return xmlString;
     }
@@ -328,7 +349,7 @@ public class ConfigUtil {
     private static Map<String, Map<String, String>> readDeploymentFile() {
 
         Map<String, Map<String, String>> tempPropertiesMap = new HashMap<>();
-        Properties deploymentProperties = new Properties();
+        java.util.Properties deploymentProperties = new java.util.Properties();
         InputStream input = null;
 
         try {

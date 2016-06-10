@@ -1,21 +1,35 @@
-import ConfigFileTypes.Properties;
-import ConfigFileTypes.XML;
-import ConfigFileTypes.YAML;
+
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-import java.io.*;
+import org.wso2.carbon.kernel.core.util.ConfigUtil;
+
+import org.wso2.carbon.kernel.core.util.configfiletypes.Properties;
+import org.wso2.carbon.kernel.core.util.configfiletypes.XML;
+import org.wso2.carbon.kernel.core.util.configfiletypes.YAML;
+
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.util.logging.Logger;
+
+
+
+
 
 /**
  * Created by shan on 6/6/16.
  */
 public class ConfigUtilTest {
 
+    private static Logger logger = Logger.getLogger(ConfigUtilTest.class.getName());
+
     @Test
     public void getConfigYaml() {
         File file = new File("carbon.yml");
         YAML configYaml = ConfigUtil.getConfig(file, YAML.class);
-        System.out.println("New YML: \n" + configYaml.getValue());
+        logger.info("New YML: \n" + configYaml.getValue());
 
     }
 
@@ -26,9 +40,9 @@ public class ConfigUtilTest {
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
             XML configXml = ConfigUtil.getConfig(fileInputStream, file.getName(), XML.class);
-            System.out.println("New XML: \n" + configXml.getValue());
+            logger.info("New XML: \n" + configXml.getValue());
         } catch (FileNotFoundException e) {
-            System.out.println(e);
+            logger.warning(e.toString());
         }
     }
 
@@ -38,9 +52,9 @@ public class ConfigUtilTest {
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
             Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
-            System.out.println("New Properties: \n" + configProperties);
+            logger.info("New Properties: \n" + configProperties);
         } catch (FileNotFoundException e) {
-            System.out.println(e);
+            logger.warning(e.toString());
         }
     }
 
