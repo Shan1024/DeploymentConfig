@@ -34,7 +34,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
 import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
@@ -81,7 +80,7 @@ public final class ConfigUtil {
 
         String xmlString = "";
         ConfigFileFormat configFileFormat = ConfigFileFormat.XML;
-        ;
+
         try {
             if (klass.isAssignableFrom(Properties.class)) {
                 //Convert the properties file to XML format
@@ -195,7 +194,7 @@ public final class ConfigUtil {
     private static String convertYamlToJson(String yamlString) {
         String jsonString;
         Yaml yaml = new Yaml();
-        Map<String, Object> map = (Map<String, Object>) yaml.load(yamlString);
+        Map map = (Map) yaml.load(yamlString);
         JSONObject jsonObject = new JSONObject(map);
         jsonString = jsonObject.toString();
         return jsonString;
@@ -264,9 +263,11 @@ public final class ConfigUtil {
             map = (Map) map.get(ROOT_ELEMENT);
         }
         StringBuilder stringBuilder = new StringBuilder();
+        String tempString;
         for (Object entryObject : map.entrySet()) {
-            Map.Entry<Object, Object> entry = (Map.Entry<Object, Object>) entryObject;
-            stringBuilder.append(entry.getKey() + " = " + entry.getValue()).append("\n");
+            Map.Entry entry = (Map.Entry) entryObject;
+            tempString = entry.getKey() + " = " + entry.getValue();
+            stringBuilder.append(tempString).append("\n");
         }
         return stringBuilder.toString();
     }
@@ -336,8 +337,6 @@ public final class ConfigUtil {
             transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.transform(source, xmlOutput);
             xmlString = xmlOutput.getWriter().toString();
-        } catch (TransformerConfigurationException e) {
-            logger.log(Level.SEVERE, "Exception occurred while converting doc to string: " + e);
         } catch (TransformerException e) {
             logger.log(Level.SEVERE, "Exception occurred while converting doc to string: " + e);
         }
@@ -352,7 +351,7 @@ public final class ConfigUtil {
 
         try {
             File file = new File(DEPLOYMENT_PROPERTIES_FILE_NAME);
-            
+
             if (file.exists()) {
                 input = new FileInputStream(file);
                 deploymentProperties.load(input);
@@ -389,7 +388,6 @@ public final class ConfigUtil {
                 try {
                     input.close();
                 } catch (IOException ioException2) {
-
                     logger.log(Level.SEVERE, "Error occurred while closing the InputStream: " + ioException2);
                 }
             }
