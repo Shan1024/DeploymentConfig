@@ -22,8 +22,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -69,7 +71,7 @@ public final class ConfigUtil {
             FileInputStream fileInputStream = new FileInputStream(file);
             newConfigs = getConfig(fileInputStream, file.getName(), klass);
         } catch (FileNotFoundException e) {
-            logger.warning("Ex: " + e);
+            logger.log(Level.INFO, "File not found at " + file.getAbsolutePath() + " ; " + e);
         }
         return newConfigs;
     }
@@ -103,14 +105,12 @@ public final class ConfigUtil {
                     configFileFormat = ConfigFileFormat.YML;
                 }
             }
-
             //Apply the new configs
             xmlString = applyNewConfigs(xmlString, fileName);
-
-        } catch (FileNotFoundException e) {
-            logger.warning("File not found: " + e);
+        } catch (UnsupportedEncodingException e) {
+            logger.log(Level.SEVERE, "Cannot read FileInputStream:  " + e);
         } catch (IOException e) {
-            logger.warning("IO Ex: " + e);
+            logger.log(Level.SEVERE, "IOException:  " + e);
         }
 
         //Convert xml back to original format
@@ -162,7 +162,7 @@ public final class ConfigUtil {
                     returnValue = configMap.get(xpath);
                 }
             } else {
-                logger.warning(xpath + " was not found");
+                logger.log(Level.INFO, xpath + " was not found");
             }
         }
         return returnValue;
@@ -176,7 +176,7 @@ public final class ConfigUtil {
                 convertedConfig = convertYamlToXml(data);
                 break;
             default:
-                logger.warning("Unsupported file format: " + configFileFormat);
+                logger.log(Level.SEVERE, "Unsupported file format: " + configFileFormat);
                 break;
         }
         return convertedConfig;
@@ -217,7 +217,7 @@ public final class ConfigUtil {
             JSONObject json = new JSONObject(jsonString);
             xmlString = XML.toString(json);
         } catch (JSONException e) {
-            logger.warning("Ex: " + e);
+            logger.log(Level.SEVERE, "Exception occurred while converting JSON to XML");
         }
         //Need to add a root element
         xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
@@ -230,7 +230,7 @@ public final class ConfigUtil {
             JSONObject xmlJSONObj = XML.toJSONObject(xmlString);
             jsonString = xmlJSONObj.toString();
         } catch (JSONException e) {
-            logger.warning("Ex: " + e);
+            logger.log(Level.SEVERE, "Exception occurred while converting XML to JSON: " + e);
         }
         return jsonString;
     }
@@ -248,7 +248,7 @@ public final class ConfigUtil {
             }
             xmlString = stringBuilder.toString();
         } catch (IOException e) {
-            logger.warning("Ex: " + e);
+            logger.log(Level.SEVERE, "Exception occurred while converting Properties to XML: " + e);
         }
         //Need to add a root element
         xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
@@ -290,7 +290,6 @@ public final class ConfigUtil {
                 XPath xPath = XPathFactory.newInstance().newXPath();
 
                 newConfigs.keySet().forEach(key -> {
-                    logger.info("key: " + key);
                     try {
                         NodeList nodeList = (NodeList) xPath.compile(key).evaluate(doc, XPathConstants.NODESET);
                         if (nodeList.item(0) != null) {
@@ -298,15 +297,15 @@ public final class ConfigUtil {
                             firstNode.getFirstChild().setNodeValue(newConfigs.get(key));
                         }
                     } catch (XPathExpressionException e) {
-                        logger.warning("Ex: " + e);
+                        logger.log(Level.SEVERE, "Exception occurred when applying xpath: " + e);
                     }
                 });
                 updatedString = convertXMLtoString(doc);
             } catch (ParserConfigurationException | IOException | SAXException e) {
-                logger.warning("Ex: " + e);
+                logger.log(Level.SEVERE, "Exception occurred when building document: " + e);
             }
         } else {
-            logger.info("New configurations for " + formattedFileName + " was not found in "
+            logger.log(Level.INFO, "New configurations for " + formattedFileName + " was not found in "
                     + DEPLOYMENT_PROPERTIES_FILE_NAME);
         }
         return updatedString;
@@ -325,7 +324,6 @@ public final class ConfigUtil {
     private static String convertXmlSourceToString(Source source) {
 
         String xmlString = "";
-
         try {
             StringWriter stringWriter = new StringWriter();
             StreamResult xmlOutput = new StreamResult(stringWriter);
@@ -339,9 +337,9 @@ public final class ConfigUtil {
             transformer.transform(source, xmlOutput);
             xmlString = xmlOutput.getWriter().toString();
         } catch (TransformerConfigurationException e) {
-            logger.warning("Exception occurred while converting doc to string: " + e);
+            logger.log(Level.SEVERE, "Exception occurred while converting doc to string: " + e);
         } catch (TransformerException e) {
-            logger.warning("Exception occurred while converting doc to string: " + e);
+            logger.log(Level.SEVERE, "Exception occurred while converting doc to string: " + e);
         }
         return xmlString;
     }
@@ -354,7 +352,7 @@ public final class ConfigUtil {
 
         try {
             File file = new File(DEPLOYMENT_PROPERTIES_FILE_NAME);
-
+            
             if (file.exists()) {
                 input = new FileInputStream(file);
                 deploymentProperties.load(input);
@@ -380,17 +378,19 @@ public final class ConfigUtil {
                     }
                 });
             } else {
-                logger.warning(DEPLOYMENT_PROPERTIES_FILE_NAME + " file not found at " + file.getAbsolutePath());
+                logger.log(Level.INFO,
+                        DEPLOYMENT_PROPERTIES_FILE_NAME + " file not found at " + file.getAbsolutePath());
             }
         } catch (IOException ioException) {
-            logger.warning("Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME + " file. Error: "
-                    + ioException.toString());
+            logger.log(Level.SEVERE, "Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME +
+                    " file. Error: " + ioException.toString());
         } finally {
             if (input != null) {
                 try {
                     input.close();
                 } catch (IOException ioException2) {
-                    logger.warning("Error occurred while closing the InputStream. Error: " + ioException2.toString());
+
+                    logger.log(Level.SEVERE, "Error occurred while closing the InputStream: " + ioException2);
                 }
             }
         }

@@ -1,25 +1,16 @@
-
 import org.testng.Assert;
 import org.testng.annotations.Test;
-
 import org.wso2.carbon.kernel.core.util.ConfigUtil;
-
 import org.wso2.carbon.kernel.core.util.configfiletypes.Properties;
 import org.wso2.carbon.kernel.core.util.configfiletypes.XML;
 import org.wso2.carbon.kernel.core.util.configfiletypes.YAML;
-
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.logging.Logger;
 
-
-
-
-
 /**
- * Created by shan on 6/6/16.
+ * This class is to demonstrate the sample uses of the ConfigUtil class
  */
 public class ConfigUtilTest {
 
@@ -30,12 +21,10 @@ public class ConfigUtilTest {
         File file = new File("carbon.yml");
         YAML configYaml = ConfigUtil.getConfig(file, YAML.class);
         logger.info("New YML: \n" + configYaml.getValue());
-
     }
 
     @Test
     public void getConfigXml() {
-
         File file = new File("log4j2.xml");
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
@@ -60,7 +49,6 @@ public class ConfigUtilTest {
 
     @Test
     public void getConfigs() {
-
         String newTenant = ConfigUtil.getConfig("[carbon.yml]/tenant");
         Assert.assertEquals(newTenant, "shanm");
 
@@ -69,7 +57,6 @@ public class ConfigUtilTest {
 
         String newTransportPortXYZ = ConfigUtil.getConfig("[carbon.yml]/transports/transport[name='xyz']/port");
         Assert.assertEquals(newTransportPortXYZ, "8888");
-
     }
 
 }

@@ -1,7 +1,7 @@
 package org.wso2.carbon.kernel.core.util.configfiletypes;
 
 /**
- * Created by shan on 6/9/16.
+ * This class represents Properties formatted config data and contains Properties in String format.
  */
 public class Properties extends AbstractConfigFileFormat {
 
