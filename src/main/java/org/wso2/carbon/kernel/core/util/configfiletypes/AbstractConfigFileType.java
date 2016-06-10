@@ -3,7 +3,7 @@ package org.wso2.carbon.kernel.core.util.configfiletypes;
 /**
  * This class is used to return the new config values to the component developer.
  */
-public abstract class AbstractConfigFileFormat {
+public abstract class AbstractConfigFileType {
 
     private String value;
 

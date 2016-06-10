@@ -6,7 +6,7 @@ import org.json.XML;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.wso2.carbon.kernel.core.util.configfiletypes.AbstractConfigFileFormat;
+import org.wso2.carbon.kernel.core.util.configfiletypes.AbstractConfigFileType;
 import org.wso2.carbon.kernel.core.util.configfiletypes.Properties;
 import org.wso2.carbon.kernel.core.util.configfiletypes.YAML;
 import org.xml.sax.InputSource;
@@ -45,7 +45,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 /**
- * This util class provide the ability to override configurations in various components using a single file.
+ * This util class provide the ability to override configurations in various components using a single
+ * <b>deployment.properties</b> file.
  */
 public final class ConfigUtil {
 
@@ -63,7 +64,18 @@ public final class ConfigUtil {
 
     }
 
-    public static <T extends AbstractConfigFileFormat> T getConfig(File file, Class<T> klass) {
+    /**
+     * This method reads the provided {@link File} and returns an object of type {@link AbstractConfigFileType}
+     * which was given as a input. That object has the new configurations as a String which you can get by
+     * {@link AbstractConfigFileType#getValue()} method.
+     *
+     * @param <T>   The class representing the configuration file type
+     * @param file  Input config file
+     * @param klass Configuration file type which is a subclass of {@link AbstractConfigFileType}.
+     * @return The new configurations in the given format as a String.
+     * @see AbstractConfigFileType
+     */
+    public static <T extends AbstractConfigFileType> T getConfig(File file, Class<T> klass) {
 
         T newConfigs = null;
         try {
@@ -75,12 +87,26 @@ public final class ConfigUtil {
         return newConfigs;
     }
 
-    public static <T extends AbstractConfigFileFormat> T getConfig(FileInputStream inputStream, String fileName,
+    /**
+     * This method reads the provided {@link FileInputStream} and returns an object of type
+     * {@link AbstractConfigFileType} which was given as a input. That object has the new configurations as a String
+     * which you can get by {@link AbstractConfigFileType#getValue()} method.
+     *
+     * @param <T>         The class representing the configuration file type
+     * @param inputStream FileInputStream of the config file
+     * @param klass       Configuration file type which is a subclass of {@link AbstractConfigFileType}.
+     * @return The new configurations in the given format as a String.
+     * @see AbstractConfigFileType
+     */
+    public static <T extends AbstractConfigFileType> T getConfig(FileInputStream inputStream, String fileName,
             Class<T> klass) {
 
         String xmlString = "";
         ConfigFileFormat configFileFormat = ConfigFileFormat.XML;
+        String convertedString = "";
 
+        /*If an exception throws when processing, don't apply the new configurations and don't convert back to
+        original format.*/
         try {
             if (klass.isAssignableFrom(Properties.class)) {
                 //Convert the properties file to XML format
@@ -106,16 +132,17 @@ public final class ConfigUtil {
             }
             //Apply the new configs
             xmlString = applyNewConfigs(xmlString, fileName);
+
+            //Convert xml back to original format
+            convertedString = convertToOriginalFormat(xmlString, configFileFormat);
+
         } catch (UnsupportedEncodingException e) {
             logger.log(Level.SEVERE, "Cannot read FileInputStream:  " + e);
         } catch (IOException e) {
             logger.log(Level.SEVERE, "IOException:  " + e);
         }
 
-        //Convert xml back to original format
-        String convertedString = convertToOriginalFormat(xmlString, configFileFormat);
-
-        AbstractConfigFileFormat baseObject;
+        AbstractConfigFileType baseObject;
         if (klass.isAssignableFrom(YAML.class)) {
             baseObject = new YAML();
         } else if (klass.isAssignableFrom(org.wso2.carbon.kernel.core.util.configfiletypes.XML.class)) {
@@ -143,9 +170,14 @@ public final class ConfigUtil {
         }
     }
 
-    //  \${(sys|sec|env)(:\w+)(\.\w+)*} - regex to identify placeholder values
+    /**
+     * This method returns the configuration value associated with the given key in the <b>deployment.properties</b>
+     * file.
+     *
+     * @param key Key of the configuration
+     * @return The new configuration value if the key. If it does not have a new value, {@code null} will be returned.
+     */
     public static String getConfig(String key) {
-
         String returnValue = null;
         int index = key.indexOf("/");
         if (index != -1) {
