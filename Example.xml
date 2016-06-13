@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurations>
+    <tenant secure="true">tenant</tenant>
+    <transport>
+        <name>abc</name>
+        <port>8000</port>
+    </transport>
+</configurations>
