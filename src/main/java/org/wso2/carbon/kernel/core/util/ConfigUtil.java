@@ -106,12 +106,14 @@ public final class ConfigUtil {
             Class<T> klass) {
 
         String xmlString = "";
+        //This variable stores the original file format
         ConfigFileFormat configFileFormat = ConfigFileFormat.XML;
         String convertedString = "";
 
         /*If an exception throws when processing, don't apply the new configurations and don't convert back to
         original format.*/
         try {
+            //properties file can be directly load from the input stream
             if (klass.isAssignableFrom(Properties.class)) {
                 //Convert the properties file to XML format
                 xmlString = convertPropertiesToXml(inputStream);
@@ -188,6 +190,7 @@ public final class ConfigUtil {
             String fileName = key.substring(0, index);
             String xpath = key.substring(index);
 
+            //Add root element for yml, properties files
             if (fileName.matches(FILE_REGEX)) {
                 xpath = "/" + ROOT_ELEMENT + xpath;
             }
@@ -333,6 +336,7 @@ public final class ConfigUtil {
                             Node firstNode = nodeList.item(0);
                             firstNode.getFirstChild().setNodeValue(newConfigs.get(xPathKey));
                         } else {
+                            //If key in deployment.properties not found in the config file
                             logger.log(Level.SEVERE, xPathKey + " was not found in " + fileName);
                             throw new RuntimeException(xPathKey + " was not found in " + fileName);
                         }
@@ -362,7 +366,6 @@ public final class ConfigUtil {
     }
 
     private static String convertXmlSourceToString(Source source) {
-
         String xmlString = "";
         try {
             StringWriter stringWriter = new StringWriter();
@@ -402,10 +405,12 @@ public final class ConfigUtil {
                     String xpath = keyString.substring(index);
                     String value = deploymentProperties.getProperty(keyString);
 
+                    //Process value if it contains a $sys, $env, $sec placeholder
                     if (value.matches(PLACEHOLDER_REGEX)) {
                         value = processValue(value);
                     }
 
+                    //Add root element for yml, properties files
                     if (fileName.matches(FILE_REGEX)) {
                         xpath = "/" + ROOT_ELEMENT + xpath;
                     }

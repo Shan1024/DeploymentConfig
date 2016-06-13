@@ -1,42 +1,65 @@
+import java.util.List;
+
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
-public class Configurations {
+class Transport {
 
-    @XmlRootElement
-    static class Transport {
+    String name;
+    int port;
+    boolean secure;
 
-        String name;
-        String port;
-
-        @XmlElement
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        @XmlElement
-        public void setPort(String port) {
-            this.port = port;
-        }
-
-        public String getPort() {
-            return port;
-        }
-
-        @Override
-        public String toString() {
-            return "Name: " + name + ", Port: " + port;
-        }
-
+    @XmlAttribute
+    public void setSecure(boolean secure) {
+        this.secure = secure;
     }
 
+    public boolean isSecure() {
+        return secure;
+    }
+
+    @XmlElement
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    @XmlElement
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public int getPort() {
+        return port;
+    }
+}
+
+@XmlRootElement
+class Transports {
+
+    List<Transport> transport;
+
+    @XmlElement
+    public void setTransport(List<Transport> transport) {
+        this.transport = transport;
+    }
+
+    public List<Transport> getTransport() {
+        return transport;
+    }
+
+}
+
+@XmlRootElement
+public class Configurations {
+
     String tenant;
-    Transport transport;
+    Transports transports;
 
     @XmlElement
     public void setTenant(String tenant) {
@@ -48,16 +71,11 @@ public class Configurations {
     }
 
     @XmlElement
-    public void setTransport(Transport transport) {
-        this.transport = transport;
+    public void setTransports(Transports transports) {
+        this.transports = transports;
     }
 
-    public Transport getTransport() {
-        return transport;
-    }
-
-    @Override
-    public String toString() {
-        return "tenant: " + tenant + "\nTransport: \n\t" + transport;
+    public Transports getTransports() {
+        return transports;
     }
 }
