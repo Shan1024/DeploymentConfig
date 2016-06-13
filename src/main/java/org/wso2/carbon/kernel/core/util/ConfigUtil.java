@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -54,6 +56,8 @@ public final class ConfigUtil {
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
     private static final String ROOT_ELEMENT = "configurations";
     private static final String FILE_REGEX = "\\[.+\\.(yml|properties)\\]";
+    private static final String PLACEHOLDER_REGEX = "\\$\\s*(sys|env|sec)\\s*->(.+)";
+    private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(PLACEHOLDER_REGEX);
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
 
     private enum ConfigFileFormat {
@@ -322,12 +326,15 @@ public final class ConfigUtil {
                 Document doc = docBuilder.parse(new InputSource(new StringReader(xmlString)));
                 XPath xPath = XPathFactory.newInstance().newXPath();
 
-                newConfigs.keySet().forEach(key -> {
+                newConfigs.keySet().forEach(xPathKey -> {
                     try {
-                        NodeList nodeList = (NodeList) xPath.compile(key).evaluate(doc, XPathConstants.NODESET);
+                        NodeList nodeList = (NodeList) xPath.compile(xPathKey).evaluate(doc, XPathConstants.NODESET);
                         if (nodeList.item(0) != null) {
                             Node firstNode = nodeList.item(0);
-                            firstNode.getFirstChild().setNodeValue(newConfigs.get(key));
+                            firstNode.getFirstChild().setNodeValue(newConfigs.get(xPathKey));
+                        } else {
+                            logger.log(Level.SEVERE, xPathKey + " was not found in " + fileName);
+                            throw new RuntimeException(xPathKey + " was not found in " + fileName);
                         }
                     } catch (XPathExpressionException e) {
                         logger.log(Level.SEVERE, "Exception occurred when applying xpath: " + e);
@@ -395,6 +402,10 @@ public final class ConfigUtil {
                     String xpath = keyString.substring(index);
                     String value = deploymentProperties.getProperty(keyString);
 
+                    if (value.matches(PLACEHOLDER_REGEX)) {
+                        value = processValue(value);
+                    }
+
                     if (fileName.matches(FILE_REGEX)) {
                         xpath = "/" + ROOT_ELEMENT + xpath;
                     }
@@ -427,4 +438,37 @@ public final class ConfigUtil {
         return tempPropertiesMap;
     }
 
+    private static String processValue(String placeholder) {
+
+        String newValue = placeholder;
+        if (placeholder != null) {
+            Matcher matcher = PLACEHOLDER_PATTERN.matcher(placeholder);
+            if (matcher.find()) {
+                String key = matcher.group(1).trim();
+                String value = matcher.group(2).trim();
+                switch (key) {
+                    case "env":
+                        newValue = System.getenv(value);
+                        if (newValue == null) {
+                            throw new RuntimeException("Environment Variable " + value + " not found. Processing "
+                                    + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.");
+                        }
+                        break;
+                    case "sys":
+                        newValue = System.getProperty(value);
+                        if (newValue == null) {
+                            throw new RuntimeException("System property " + value + " not found. Processing "
+                                    + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.");
+                        }
+                        break;
+                    case "sec":
+                        //todo
+                        break;
+                    default:
+                        throw new RuntimeException("Unidentified placeholder key: " + key);
+                }
+            }
+        }
+        return newValue;
+    }
 }
