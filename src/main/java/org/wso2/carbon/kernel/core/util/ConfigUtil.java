@@ -1,8 +1,25 @@
+/*
+ *  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package org.wso2.carbon.kernel.core.util;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.XML;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -25,8 +42,6 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,10 +64,12 @@ import javax.xml.xpath.XPathFactory;
 /**
  * This util class provide the ability to override configurations in various components using a single
  * <b>deployment.properties</b> file.
+ *
+ * @since 5.1.0
  */
 public final class ConfigUtil {
 
-    private static Logger logger = Logger.getLogger(ConfigUtil.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(ConfigUtil.class.getName());
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
     private static final String ROOT_ELEMENT = "configurations";
     private static final String FILE_REGEX = "\\[.+\\.(yml|properties)\\]";
@@ -86,7 +103,7 @@ public final class ConfigUtil {
             FileInputStream fileInputStream = new FileInputStream(file);
             newConfigs = getConfig(fileInputStream, file.getName(), klass);
         } catch (FileNotFoundException e) {
-            logger.log(Level.INFO, "File not found at " + file.getAbsolutePath() + " ; " + e);
+            logger.info("File not found at " + file.getAbsolutePath() + " ; " + e);
         }
         return newConfigs;
     }
@@ -119,7 +136,7 @@ public final class ConfigUtil {
                 xmlString = convertPropertiesToXml(inputStream);
                 configFileFormat = ConfigFileFormat.PROPERTIES;
             } else {
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "UTF8"));
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
                 StringBuilder stringBuilder = new StringBuilder();
                 String line;
                 while ((line = bufferedReader.readLine()) != null) {
@@ -143,9 +160,9 @@ public final class ConfigUtil {
             convertedString = convertToOriginalFormat(xmlString, configFileFormat);
 
         } catch (UnsupportedEncodingException e) {
-            logger.log(Level.SEVERE, "Cannot read FileInputStream:  " + e);
+            logger.error("Cannot read FileInputStream:  " + e);
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "IOException:  " + e);
+            logger.error("IOException:  " + e);
         }
 
         AbstractConfigFileType baseObject;
@@ -200,7 +217,7 @@ public final class ConfigUtil {
                     returnValue = configMap.get(xpath);
                 }
             } else {
-                logger.log(Level.INFO, xpath + " was not found");
+                logger.info(xpath + " was not found");
             }
         }
         return returnValue;
@@ -214,7 +231,7 @@ public final class ConfigUtil {
                 convertedConfig = convertYamlToXml(data);
                 break;
             default:
-                logger.log(Level.SEVERE, "Unsupported file format: " + configFileFormat);
+                logger.error("Unsupported file format: " + configFileFormat);
                 break;
         }
         return convertedConfig;
@@ -255,7 +272,7 @@ public final class ConfigUtil {
             JSONObject json = new JSONObject(jsonString);
             xmlString = XML.toString(json);
         } catch (JSONException e) {
-            logger.log(Level.SEVERE, "Exception occurred while converting JSON to XML");
+            logger.error("Exception occurred while converting JSON to XML");
         }
         //Need to add a root element
         xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
@@ -268,7 +285,7 @@ public final class ConfigUtil {
             JSONObject xmlJSONObj = XML.toJSONObject(xmlString);
             jsonString = xmlJSONObj.toString();
         } catch (JSONException e) {
-            logger.log(Level.SEVERE, "Exception occurred while converting XML to JSON: " + e);
+            logger.error("Exception occurred while converting XML to JSON: " + e);
         }
         return jsonString;
     }
@@ -286,7 +303,7 @@ public final class ConfigUtil {
             }
             xmlString = stringBuilder.toString();
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Exception occurred while converting Properties to XML: " + e);
+            logger.error("Exception occurred while converting Properties to XML: " + e);
         }
         //Need to add a root element
         xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
@@ -337,19 +354,19 @@ public final class ConfigUtil {
                             firstNode.getFirstChild().setNodeValue(newConfigs.get(xPathKey));
                         } else {
                             //If key in deployment.properties not found in the config file
-                            logger.log(Level.SEVERE, xPathKey + " was not found in " + fileName);
+                            logger.error(xPathKey + " was not found in " + fileName);
                             throw new RuntimeException(xPathKey + " was not found in " + fileName);
                         }
                     } catch (XPathExpressionException e) {
-                        logger.log(Level.SEVERE, "Exception occurred when applying xpath: " + e);
+                        logger.error("Exception occurred when applying xpath: " + e);
                     }
                 });
                 updatedString = convertXMLtoString(doc);
             } catch (ParserConfigurationException | IOException | SAXException e) {
-                logger.log(Level.SEVERE, "Exception occurred when building document: " + e);
+                logger.error("Exception occurred when building document: " + e);
             }
         } else {
-            logger.log(Level.INFO, "New configurations for " + formattedFileName + " was not found in "
+            logger.info("New configurations for " + formattedFileName + " was not found in "
                     + DEPLOYMENT_PROPERTIES_FILE_NAME);
         }
         return updatedString;
@@ -380,7 +397,7 @@ public final class ConfigUtil {
             transformer.transform(source, xmlOutput);
             xmlString = xmlOutput.getWriter().toString();
         } catch (TransformerException e) {
-            logger.log(Level.SEVERE, "Exception occurred while converting doc to string: " + e);
+            logger.error("Exception occurred while converting doc to string: " + e);
         }
         return xmlString;
     }
@@ -425,18 +442,17 @@ public final class ConfigUtil {
                     }
                 });
             } else {
-                logger.log(Level.INFO,
-                        DEPLOYMENT_PROPERTIES_FILE_NAME + " file not found at " + file.getAbsolutePath());
+                logger.info(DEPLOYMENT_PROPERTIES_FILE_NAME + " file not found at " + file.getAbsolutePath());
             }
         } catch (IOException ioException) {
-            logger.log(Level.SEVERE, "Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME +
+            logger.error("Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME +
                     " file. Error: " + ioException.toString());
         } finally {
             if (input != null) {
                 try {
                     input.close();
                 } catch (IOException ioException2) {
-                    logger.log(Level.SEVERE, "Error occurred while closing the InputStream: " + ioException2);
+                    logger.error("Error occurred while closing the InputStream: " + ioException2);
                 }
             }
         }

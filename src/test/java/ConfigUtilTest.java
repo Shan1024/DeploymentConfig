@@ -1,3 +1,21 @@
+/*
+ *  Copyright (c) 2016, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 import org.wso2.carbon.kernel.core.util.ConfigUtil;
@@ -17,8 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -27,11 +43,13 @@ import javax.xml.transform.Source;
 import javax.xml.transform.stream.StreamSource;
 
 /**
- * This class is to demonstrate the sample uses of the ConfigUtil class
+ * This class is to demonstrate the sample uses of the ConfigUtil class.
+ *
+ * @since 5.1.0
  */
 public class ConfigUtilTest {
 
-    private static Logger logger = Logger.getLogger(ConfigUtilTest.class.getName());
+    private static Logger logger = LoggerFactory.getLogger(ConfigUtilTest.class.getName());
 
     @Test
     public void xmlExample() {
@@ -67,7 +85,7 @@ public class ConfigUtilTest {
             Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), true);
 
         } catch (JAXBException e) {
-            logger.log(Level.SEVERE, e.toString());
+            logger.error(e.toString());
         }
     }
 
@@ -91,7 +109,8 @@ public class ConfigUtilTest {
             Assert.assertEquals(transport2.get("port"), 9000);
             Assert.assertEquals(transport2.get("secure"), false);
 
-            YAML configYml = ConfigUtil.getConfig(file, YAML.class);
+            fileInputStream = new FileInputStream(file);
+            YAML configYml = ConfigUtil.getConfig(fileInputStream, file.getName(), YAML.class);
             yaml = new Yaml();
             map = yaml.loadAs(configYml.getValue(), Map.class);
             transports = (ArrayList) map.get("transports");
@@ -107,7 +126,7 @@ public class ConfigUtilTest {
             Assert.assertEquals(transport2.get("secure"), true);
 
         } catch (FileNotFoundException e) {
-            logger.log(Level.SEVERE, e.toString());
+            logger.error(e.toString());
         }
     }
 
@@ -126,7 +145,8 @@ public class ConfigUtilTest {
             Assert.assertEquals(properties.get("transport.xyz.port"), "9000");
             Assert.assertEquals(properties.get("transport.xyz.secure"), "false");
 
-            Properties configProperties = ConfigUtil.getConfig(file, Properties.class);
+            fileInputStream = new FileInputStream(file);
+            Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
             properties = new java.util.Properties();
             properties.load(new StringReader(configProperties.getValue()));
 
@@ -136,10 +156,8 @@ public class ConfigUtilTest {
             Assert.assertEquals(properties.get("transport.xyz.port"), "9090");
             Assert.assertEquals(properties.get("transport.xyz.secure"), "true");
 
-        } catch (FileNotFoundException e) {
-            logger.log(Level.SEVERE, e.toString());
         } catch (IOException e) {
-            logger.log(Level.SEVERE, e.toString());
+            logger.error(e.toString());
         }
     }
 
@@ -190,6 +208,7 @@ public class ConfigUtilTest {
         System.setProperty("abc.http.port", "8080");
     }
 
+    @SuppressWarnings("unchecked")
     private static void setEnv(Map<String, String> newenv) {
         try {
             Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
@@ -217,10 +236,10 @@ public class ConfigUtilTest {
                     }
                 }
             } catch (Exception e2) {
-                logger.log(Level.INFO, e2.toString());
+                logger.info(e2.toString());
             }
         } catch (Exception e1) {
-            logger.log(Level.INFO, e1.toString());
+            logger.info(e1.toString());
         }
     }
 }
