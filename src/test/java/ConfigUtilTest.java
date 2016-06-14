@@ -18,10 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
 import org.testng.annotations.Test;
-import org.wso2.carbon.kernel.core.util.ConfigUtil;
-import org.wso2.carbon.kernel.core.util.configfiletypes.Properties;
-import org.wso2.carbon.kernel.core.util.configfiletypes.XML;
-import org.wso2.carbon.kernel.core.util.configfiletypes.YAML;
+import org.wso2.carbon.kernel.utils.ConfigUtil;
+import org.wso2.carbon.kernel.utils.configfiletypes.Properties;
+import org.wso2.carbon.kernel.utils.configfiletypes.XML;
+import org.wso2.carbon.kernel.utils.configfiletypes.YAML;
 import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;

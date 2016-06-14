@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.wso2.carbon.kernel.core.util;
+package org.wso2.carbon.kernel.utils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -23,9 +23,9 @@ import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.wso2.carbon.kernel.core.util.configfiletypes.AbstractConfigFileType;
-import org.wso2.carbon.kernel.core.util.configfiletypes.Properties;
-import org.wso2.carbon.kernel.core.util.configfiletypes.YAML;
+import org.wso2.carbon.kernel.utils.configfiletypes.AbstractConfigFileType;
+import org.wso2.carbon.kernel.utils.configfiletypes.Properties;
+import org.wso2.carbon.kernel.utils.configfiletypes.YAML;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.yaml.snakeyaml.Yaml;
@@ -145,7 +145,7 @@ public final class ConfigUtil {
                 bufferedReader.close();
 
                 //Convert the file to XML format
-                if (klass.isAssignableFrom(org.wso2.carbon.kernel.core.util.configfiletypes.XML.class)) {
+                if (klass.isAssignableFrom(org.wso2.carbon.kernel.utils.configfiletypes.XML.class)) {
                     xmlString = stringBuilder.toString();
                     configFileFormat = ConfigFileFormat.XML;
                 } else if (klass.isAssignableFrom(YAML.class)) {
@@ -168,8 +168,8 @@ public final class ConfigUtil {
         AbstractConfigFileType baseObject;
         if (klass.isAssignableFrom(YAML.class)) {
             baseObject = new YAML();
-        } else if (klass.isAssignableFrom(org.wso2.carbon.kernel.core.util.configfiletypes.XML.class)) {
-            baseObject = new org.wso2.carbon.kernel.core.util.configfiletypes.XML();
+        } else if (klass.isAssignableFrom(org.wso2.carbon.kernel.utils.configfiletypes.XML.class)) {
+            baseObject = new org.wso2.carbon.kernel.utils.configfiletypes.XML();
         } else if (klass.isAssignableFrom(Properties.class)) {
             baseObject = new Properties();
         } else {

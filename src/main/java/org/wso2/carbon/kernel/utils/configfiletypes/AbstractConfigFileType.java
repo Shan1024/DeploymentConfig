@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package org.wso2.carbon.kernel.core.util.configfiletypes;
+package org.wso2.carbon.kernel.utils.configfiletypes;
 
 /**
  * This class is used to return the new config values to the component developer.
