@@ -1,0 +1,10 @@
+tenant: tenant
+transports:
+  - transport:
+      name: abc
+      port: 8000
+      secure: false
+  - transport:
+      name: xyz
+      port: 9000
+      secure: false

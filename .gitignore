@@ -14,3 +14,5 @@ hs_err_pid*
 /target/
 /.idea/
 /Deployment.iml
+/core/core.iml
+/core/target/
