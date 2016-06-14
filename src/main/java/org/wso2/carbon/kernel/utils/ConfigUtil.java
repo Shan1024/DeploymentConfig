@@ -78,7 +78,7 @@ public final class ConfigUtil {
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
 
     private enum ConfigFileFormat {
-        YML, XML, PROPERTIES
+        YAML, XML, PROPERTIES
     }
 
     private ConfigUtil() {
@@ -97,7 +97,6 @@ public final class ConfigUtil {
      * @see AbstractConfigFileType
      */
     public static <T extends AbstractConfigFileType> T getConfig(File file, Class<T> klass) {
-
         T newConfigs = null;
         try {
             FileInputStream fileInputStream = new FileInputStream(file);
@@ -115,6 +114,7 @@ public final class ConfigUtil {
      *
      * @param <T>         The class representing the configuration file type
      * @param inputStream FileInputStream of the config file
+     * @param fileName    Name of the config file
      * @param klass       Configuration file type which is a subclass of {@link AbstractConfigFileType}.
      * @return The new configurations in the given format as a String.
      * @see AbstractConfigFileType
@@ -125,10 +125,10 @@ public final class ConfigUtil {
         String xmlString = "";
         //This variable stores the original file format
         ConfigFileFormat configFileFormat = ConfigFileFormat.XML;
-        String convertedString = "";
+        String convertedString = null;
 
-        /*If an exception throws when processing, don't apply the new configurations and don't convert back to
-        original format.*/
+        //If an exception occur when processing, don't apply the new configurations and don't convert back to
+        //original format.
         try {
             //properties file can be directly load from the input stream
             if (klass.isAssignableFrom(Properties.class)) {
@@ -149,16 +149,16 @@ public final class ConfigUtil {
                     xmlString = stringBuilder.toString();
                     configFileFormat = ConfigFileFormat.XML;
                 } else if (klass.isAssignableFrom(YAML.class)) {
-                    xmlString = convertToXml(stringBuilder.toString(), ConfigFileFormat.YML);
-                    configFileFormat = ConfigFileFormat.YML;
+                    xmlString = convertToXml(stringBuilder.toString(), ConfigFileFormat.YAML);
+                    configFileFormat = ConfigFileFormat.YAML;
                 }
             }
-            //Apply the new configs
-            xmlString = applyNewConfigs(xmlString, fileName);
-
-            //Convert xml back to original format
-            convertedString = convertToOriginalFormat(xmlString, configFileFormat);
-
+            if (xmlString.length() != 0) {
+                //Apply the new configs
+                xmlString = applyNewConfigs(xmlString, fileName);
+                //Convert xml back to original format
+                convertedString = convertToOriginalFormat(xmlString, configFileFormat);
+            }
         } catch (UnsupportedEncodingException e) {
             logger.error("Cannot read FileInputStream:  " + e);
         } catch (IOException e) {
@@ -173,7 +173,7 @@ public final class ConfigUtil {
         } else if (klass.isAssignableFrom(Properties.class)) {
             baseObject = new Properties();
         } else {
-            throw new IllegalArgumentException("Unsupported type " + klass.getTypeName());
+            throw new RuntimeException("Unsupported type " + klass.getTypeName());
         }
         baseObject.setValue(convertedString);
 
@@ -184,12 +184,12 @@ public final class ConfigUtil {
         switch (fileFormat) {
             case XML:
                 return xmlString;
-            case YML:
-                return convertXmlToYaml(xmlString);
+            case YAML:
+                return convertXMLToYAML(xmlString);
             case PROPERTIES:
-                return convertXmlToProperties(xmlString);
+                return convertXMLToProperties(xmlString);
             default:
-                throw new IllegalArgumentException("Unsupported file format: " + fileFormat);
+                throw new RuntimeException("Unsupported file format: " + fileFormat);
         }
     }
 
@@ -202,7 +202,7 @@ public final class ConfigUtil {
      */
     public static String getConfig(String key) {
         String returnValue = null;
-        int index = key.indexOf("/");
+        int index = key.indexOf('/');
         if (index != -1) {
             String fileName = key.substring(0, index);
             String xpath = key.substring(index);
@@ -223,31 +223,53 @@ public final class ConfigUtil {
         return returnValue;
     }
 
+    /**
+     * This method converts a String in given format to XML format
+     *
+     * @param data             String to be converted
+     * @param configFileFormat Current format of the String
+     * @return String in XML format
+     */
     private static String convertToXml(String data, ConfigFileFormat configFileFormat) {
         //No need to convert xml to xml
         String convertedConfig = data;
-        switch (configFileFormat) {
-            case YML:
-                convertedConfig = convertYamlToXml(data);
-                break;
-            default:
-                logger.error("Unsupported file format: " + configFileFormat);
-                break;
+        if (configFileFormat == ConfigFileFormat.YAML) {
+            convertedConfig = convertYAMLToXML(data);
+        } else {
+            logger.error("Unsupported file format: " + configFileFormat);
         }
         return convertedConfig;
     }
 
-    private static String convertYamlToXml(String data) {
-        String jsonString = convertYamlToJson(data);
-        return convertJsonToXml(jsonString);
+    /**
+     * This method converts a given YAML String to XML format
+     *
+     * @param yamlString YAML String that needs to be converted to XML format
+     * @return String in XML format
+     */
+    private static String convertYAMLToXML(String yamlString) {
+        String jsonString = convertYAMLToJSON(yamlString);
+        return convertJSONToXML(jsonString);
     }
 
-    private static String convertXmlToYaml(String xmlString) {
-        String jsonString = convertXmlToJson(xmlString);
-        return convertJsonToYaml(jsonString);
+    /**
+     * This method converts a given XML String to YAML format
+     *
+     * @param xmlString XML String that needs to be converted to YAML format
+     * @return String in YAML format
+     */
+    private static String convertXMLToYAML(String xmlString) {
+        String jsonString = convertXMLToJSON(xmlString);
+        return convertJSONToYAML(jsonString);
     }
 
-    private static String convertYamlToJson(String yamlString) {
+    /**
+     * This method converts a given YAML String to JSON format
+     *
+     * @param yamlString YAML String that needs to be converted to JSON format
+     * @return String in JSON format
+     */
+    private static String convertYAMLToJSON(String yamlString) {
         String jsonString;
         Yaml yaml = new Yaml();
         Map map = (Map) yaml.load(yamlString);
@@ -256,7 +278,13 @@ public final class ConfigUtil {
         return jsonString;
     }
 
-    private static String convertJsonToYaml(String jsonString) {
+    /**
+     * This method converts a given JSON String to YAML format
+     *
+     * @param jsonString JSON String that needs to be converted to YAML format
+     * @return String in YAML format
+     */
+    private static String convertJSONToYAML(String jsonString) {
         Yaml yaml = new Yaml();
         Map map = yaml.loadAs(jsonString, Map.class);
         //Remove root element
@@ -266,20 +294,32 @@ public final class ConfigUtil {
         return yaml.dumpAsMap(map);
     }
 
-    private static String convertJsonToXml(String jsonString) {
+    /**
+     * This method converts a given JSON String to XML format
+     *
+     * @param jsonString JSON String that needs to be converted to XML format
+     * @return String in XML format
+     */
+    private static String convertJSONToXML(String jsonString) {
         String xmlString = "";
         try {
             JSONObject json = new JSONObject(jsonString);
             xmlString = XML.toString(json);
         } catch (JSONException e) {
-            logger.error("Exception occurred while converting JSON to XML");
+            logger.error("Exception occurred while converting JSON to XML: " + e);
         }
         //Need to add a root element
         xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
         return xmlString;
     }
 
-    private static String convertXmlToJson(String xmlString) {
+    /**
+     * This method converts a given XML String to JSON format
+     *
+     * @param xmlString XML String that needs to be converted to JSON format
+     * @return String in JSON format
+     */
+    private static String convertXMLToJSON(String xmlString) {
         String jsonString = "";
         try {
             JSONObject xmlJSONObj = XML.toJSONObject(xmlString);
@@ -290,10 +330,15 @@ public final class ConfigUtil {
         return jsonString;
     }
 
+    /**
+     * This method converts a Properties file to XML formatted String
+     *
+     * @param inputStream InputStream of the Properties file
+     * @return String in XML format
+     */
     private static String convertPropertiesToXml(InputStream inputStream) {
         String xmlString = "";
         java.util.Properties deploymentProperties = new java.util.Properties();
-
         try {
             deploymentProperties.load(inputStream);
             StringBuilder stringBuilder = new StringBuilder();
@@ -307,11 +352,17 @@ public final class ConfigUtil {
         }
         //Need to add a root element
         xmlString = createXmlElement(ROOT_ELEMENT, xmlString);
-        return prettyFormatXmlString(xmlString);
+        return prettyFormatXMLString(xmlString);
     }
 
-    private static String convertXmlToProperties(String xmlString) {
-        String jsonString = convertXmlToJson(xmlString);
+    /**
+     * This method converts a given XML String to Properties format
+     *
+     * @param xmlString XML String that needs to be converted to Properties format
+     * @return String in Properties format
+     */
+    private static String convertXMLToProperties(String xmlString) {
+        String jsonString = convertXMLToJSON(xmlString);
         Yaml yaml = new Yaml();
         Map map = yaml.loadAs(jsonString, Map.class);
         //Remove root element
@@ -328,10 +379,24 @@ public final class ConfigUtil {
         return stringBuilder.toString();
     }
 
+    /**
+     * This method creates and returns a String formatted XML element
+     *
+     * @param tagName Tag name of the element
+     * @param text    Text of the element
+     * @return XML element in String format
+     */
     private static String createXmlElement(String tagName, String text) {
         return "<" + tagName + ">" + text + "</" + tagName + ">";
     }
 
+    /**
+     * This method applies new configurations to given XML String
+     *
+     * @param xmlString Current configs in XML format
+     * @param fileName  Filename of the current configs
+     * @return New configs in XML formatted String
+     */
     private static String applyNewConfigs(String xmlString, String fileName) {
 
         String formattedFileName = "[" + fileName + "]";
@@ -359,11 +424,13 @@ public final class ConfigUtil {
                         }
                     } catch (XPathExpressionException e) {
                         logger.error("Exception occurred when applying xpath: " + e);
+                        throw new RuntimeException("Exception occurred when applying xpath: " + e);
                     }
                 });
                 updatedString = convertXMLtoString(doc);
             } catch (ParserConfigurationException | IOException | SAXException e) {
                 logger.error("Exception occurred when building document: " + e);
+                throw new RuntimeException("Exception occurred when building document: " + e);
             }
         } else {
             logger.info("New configurations for " + formattedFileName + " was not found in "
@@ -372,17 +439,35 @@ public final class ConfigUtil {
         return updatedString;
     }
 
-    private static String prettyFormatXmlString(String input) {
-        Source xmlInput = new StreamSource(new StringReader(input));
-        return convertXmlSourceToString(xmlInput);
+    /**
+     * This method properly formats a given XML String
+     *
+     * @param xmlString XML String that needs to be formatted
+     * @return Properly formatted XML formatted String
+     */
+    private static String prettyFormatXMLString(String xmlString) {
+        Source xmlInput = new StreamSource(new StringReader(xmlString));
+        return convertXMLSourceToString(xmlInput);
     }
 
+    /**
+     * This method converts the given Document to String format
+     *
+     * @param doc Document that needs to be converted to XML formatted String
+     * @return XML formatted String
+     */
     private static String convertXMLtoString(Document doc) {
         DOMSource domSource = new DOMSource(doc);
-        return convertXmlSourceToString(domSource);
+        return convertXMLSourceToString(domSource);
     }
 
-    private static String convertXmlSourceToString(Source source) {
+    /**
+     * This method converts the given Source to XML formatted String
+     *
+     * @param source Source that needs to be converted to XML formatted String
+     * @return XML formatted String
+     */
+    private static String convertXMLSourceToString(Source source) {
         String xmlString = "";
         try {
             StringWriter stringWriter = new StringWriter();
@@ -402,6 +487,11 @@ public final class ConfigUtil {
         return xmlString;
     }
 
+    /**
+     * This method read the <b>deployment.properties</b> file on when this class loads
+     *
+     * @return Configurations in the <b>deployment.properties</b> file in Map format
+     */
     private static Map<String, Map<String, String>> readDeploymentFile() {
 
         Map<String, Map<String, String>> tempPropertiesMap = new HashMap<>();
@@ -426,12 +516,10 @@ public final class ConfigUtil {
                     if (value.matches(PLACEHOLDER_REGEX)) {
                         value = processValue(value);
                     }
-
                     //Add root element for yml, properties files
                     if (fileName.matches(FILE_REGEX)) {
                         xpath = "/" + ROOT_ELEMENT + xpath;
                     }
-
                     if (tempPropertiesMap.containsKey(fileName)) {
                         Map<String, String> tempMap = tempPropertiesMap.get(fileName);
                         tempMap.put(xpath, value);
@@ -447,6 +535,8 @@ public final class ConfigUtil {
         } catch (IOException ioException) {
             logger.error("Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME +
                     " file. Error: " + ioException.toString());
+            throw new RuntimeException("Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME +
+                    " file. Error: " + ioException.toString());
         } finally {
             if (input != null) {
                 try {
@@ -459,35 +549,38 @@ public final class ConfigUtil {
         return tempPropertiesMap;
     }
 
+    /**
+     * This method returns the Environment, System, Secure value which correspond to the given placeholder
+     *
+     * @param placeholder Placeholder that needs to be replaced
+     * @return New value which corresponds to placeholder
+     */
     private static String processValue(String placeholder) {
-
         String newValue = placeholder;
-        if (placeholder != null) {
-            Matcher matcher = PLACEHOLDER_PATTERN.matcher(placeholder);
-            if (matcher.find()) {
-                String key = matcher.group(1).trim();
-                String value = matcher.group(2).trim();
-                switch (key) {
-                    case "env":
-                        newValue = System.getenv(value);
-                        if (newValue == null) {
-                            throw new RuntimeException("Environment Variable " + value + " not found. Processing "
-                                    + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.");
-                        }
-                        break;
-                    case "sys":
-                        newValue = System.getProperty(value);
-                        if (newValue == null) {
-                            throw new RuntimeException("System property " + value + " not found. Processing "
-                                    + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.");
-                        }
-                        break;
-                    case "sec":
-                        //todo
-                        break;
-                    default:
-                        throw new RuntimeException("Unidentified placeholder key: " + key);
-                }
+        Matcher matcher = PLACEHOLDER_PATTERN.matcher(placeholder);
+        if (matcher.find()) {
+            String key = matcher.group(1).trim();
+            String value = matcher.group(2).trim();
+            switch (key) {
+                case "env":
+                    newValue = System.getenv(value);
+                    if (newValue == null) {
+                        String failMessage = "Processing " + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.";
+                        throw new RuntimeException("Environment Variable " + value + " not found." + failMessage);
+                    }
+                    break;
+                case "sys":
+                    newValue = System.getProperty(value);
+                    if (newValue == null) {
+                        String failMessage = "Processing " + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.";
+                        throw new RuntimeException("System property " + value + " not found." + failMessage);
+                    }
+                    break;
+                case "sec":
+                    //todo
+                    break;
+                default:
+                    throw new RuntimeException("Unidentified placeholder key: " + key);
             }
         }
         return newValue;

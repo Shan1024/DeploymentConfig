@@ -71,7 +71,7 @@ public class ConfigUtilTest {
 
             XML configXml = ConfigUtil.getConfig(file, XML.class);
 
-            Source xmlInput = new StreamSource(new StringReader(configXml.getValue()));
+            Source xmlInput = new StreamSource(new StringReader(configXml.getValue().get()));
             jaxbContext = JAXBContext.newInstance(Configurations.class);
             unmarshaller = jaxbContext.createUnmarshaller();
             configurations = (Configurations) unmarshaller.unmarshal(xmlInput);
@@ -112,7 +112,7 @@ public class ConfigUtilTest {
             fileInputStream = new FileInputStream(file);
             YAML configYml = ConfigUtil.getConfig(fileInputStream, file.getName(), YAML.class);
             yaml = new Yaml();
-            map = yaml.loadAs(configYml.getValue(), Map.class);
+            map = yaml.loadAs(configYml.getValue().get(), Map.class);
             transports = (ArrayList) map.get("transports");
             transport1 = (LinkedHashMap) ((LinkedHashMap) transports.get(0)).get("transport");
             transport2 = (LinkedHashMap) ((LinkedHashMap) transports.get(1)).get("transport");
@@ -148,7 +148,7 @@ public class ConfigUtilTest {
             fileInputStream = new FileInputStream(file);
             Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
             properties = new java.util.Properties();
-            properties.load(new StringReader(configProperties.getValue()));
+            properties.load(new StringReader(configProperties.getValue().get()));
 
             Assert.assertEquals(properties.get("tenant"), "new_tenant");
             Assert.assertEquals(properties.get("transport.abc.port"), "8080");
