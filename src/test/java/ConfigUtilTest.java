@@ -71,19 +71,20 @@ public class ConfigUtilTest {
 
             XML configXml = ConfigUtil.getConfig(file, XML.class);
 
-            Source xmlInput = new StreamSource(new StringReader(configXml.getValue().get()));
-            jaxbContext = JAXBContext.newInstance(Configurations.class);
-            unmarshaller = jaxbContext.createUnmarshaller();
-            configurations = (Configurations) unmarshaller.unmarshal(xmlInput);
+            if (configXml.getValue().isPresent()) {
+                Source xmlInput = new StreamSource(new StringReader(configXml.getValue().orElse("")));
+                jaxbContext = JAXBContext.newInstance(Configurations.class);
+                unmarshaller = jaxbContext.createUnmarshaller();
+                configurations = (Configurations) unmarshaller.unmarshal(xmlInput);
 
-            Assert.assertEquals(configurations.getTenant(), "new_tenant");
-            Assert.assertEquals(configurations.getTransports().getTransport().get(0).getName(), "abc");
-            Assert.assertEquals(configurations.getTransports().getTransport().get(0).getPort(), 8080);
-            Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), true);
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "xyz");
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 9090);
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), true);
-
+                Assert.assertEquals(configurations.getTenant(), "new_tenant");
+                Assert.assertEquals(configurations.getTransports().getTransport().get(0).getName(), "abc");
+                Assert.assertEquals(configurations.getTransports().getTransport().get(0).getPort(), 8080);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), true);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "xyz");
+                Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 9090);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), true);
+            }
         } catch (JAXBException e) {
             logger.error(e.toString());
         }
@@ -112,19 +113,21 @@ public class ConfigUtilTest {
             fileInputStream = new FileInputStream(file);
             YAML configYml = ConfigUtil.getConfig(fileInputStream, file.getName(), YAML.class);
             yaml = new Yaml();
-            map = yaml.loadAs(configYml.getValue().get(), Map.class);
-            transports = (ArrayList) map.get("transports");
-            transport1 = (LinkedHashMap) ((LinkedHashMap) transports.get(0)).get("transport");
-            transport2 = (LinkedHashMap) ((LinkedHashMap) transports.get(1)).get("transport");
 
-            Assert.assertEquals(map.get("tenant"), "new_tenant");
-            Assert.assertEquals(transport1.get("name"), "abc");
-            Assert.assertEquals(transport1.get("port"), 8080);
-            Assert.assertEquals(transport1.get("secure"), true);
-            Assert.assertEquals(transport2.get("name"), "xyz");
-            Assert.assertEquals(transport2.get("port"), 9090);
-            Assert.assertEquals(transport2.get("secure"), true);
+            if (configYml.getValue().isPresent()) {
+                map = yaml.loadAs(configYml.getValue().orElse(""), Map.class);
+                transports = (ArrayList) map.get("transports");
+                transport1 = (LinkedHashMap) ((LinkedHashMap) transports.get(0)).get("transport");
+                transport2 = (LinkedHashMap) ((LinkedHashMap) transports.get(1)).get("transport");
 
+                Assert.assertEquals(map.get("tenant"), "new_tenant");
+                Assert.assertEquals(transport1.get("name"), "abc");
+                Assert.assertEquals(transport1.get("port"), 8080);
+                Assert.assertEquals(transport1.get("secure"), true);
+                Assert.assertEquals(transport2.get("name"), "xyz");
+                Assert.assertEquals(transport2.get("port"), 9090);
+                Assert.assertEquals(transport2.get("secure"), true);
+            }
         } catch (FileNotFoundException e) {
             logger.error(e.toString());
         }
@@ -148,14 +151,15 @@ public class ConfigUtilTest {
             fileInputStream = new FileInputStream(file);
             Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
             properties = new java.util.Properties();
-            properties.load(new StringReader(configProperties.getValue().get()));
 
-            Assert.assertEquals(properties.get("tenant"), "new_tenant");
-            Assert.assertEquals(properties.get("transport.abc.port"), "8080");
-            Assert.assertEquals(properties.get("transport.abc.secure"), "true");
-            Assert.assertEquals(properties.get("transport.xyz.port"), "9090");
-            Assert.assertEquals(properties.get("transport.xyz.secure"), "true");
-
+            if (configProperties.getValue().isPresent()) {
+                properties.load(new StringReader(configProperties.getValue().orElse("")));
+                Assert.assertEquals(properties.get("tenant"), "new_tenant");
+                Assert.assertEquals(properties.get("transport.abc.port"), "8080");
+                Assert.assertEquals(properties.get("transport.abc.secure"), "true");
+                Assert.assertEquals(properties.get("transport.xyz.port"), "9090");
+                Assert.assertEquals(properties.get("transport.xyz.secure"), "true");
+            }
         } catch (IOException e) {
             logger.error(e.toString());
         }
@@ -198,6 +202,26 @@ public class ConfigUtilTest {
         Assert.assertEquals(newValue, "9090");
         newValue = ConfigUtil.getConfig("[Example.properties]/transport.xyz.secure");
         Assert.assertEquals(newValue, "true");
+    }
+
+    @Test(expectedExceptions = ExceptionInInitializerError.class)
+    public void invalidPropertiesTest() {
+        File file = new File("Example.xml");
+        XML configXml = ConfigUtil.getConfig(file, XML.class);
+        logger.info(configXml.getValue().orElse("No data"));
+    }
+
+    @Test(expectedExceptions = RuntimeException.class)
+    public void invalidConfigTest() {
+        setUpEnvironment();
+        File file = new File("Example2.xml");
+        try {
+            FileInputStream fileInputStream = new FileInputStream(file);
+            XML configXml = ConfigUtil.getConfig(fileInputStream, "Example.xml", XML.class);
+            logger.info(configXml.getValue().orElse("No data"));
+        } catch (FileNotFoundException e) {
+            logger.warn("File Not found: " + file.getAbsolutePath());
+        }
     }
 
     private void setUpEnvironment() {
