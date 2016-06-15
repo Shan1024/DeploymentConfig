@@ -22,21 +22,21 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
- * @since 5.1.0
+ * @since 5.2.0
  */
 @XmlRootElement
 class Transport {
 
     String name;
     int port;
-    boolean secure;
+    String secure;
 
     @XmlAttribute
-    public void setSecure(boolean secure) {
+    public void setSecure(String secure) {
         this.secure = secure;
     }
 
-    public boolean isSecure() {
+    public String isSecure() {
         return secure;
     }
 

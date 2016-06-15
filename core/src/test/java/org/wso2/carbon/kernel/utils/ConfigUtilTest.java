@@ -49,7 +49,7 @@ import javax.xml.transform.stream.StreamSource;
 /**
  * This class is to demonstrate the sample uses of the ConfigUtil class.
  *
- * @since 5.1.0
+ * @since 5.2.0
  */
 public class ConfigUtilTest {
 
@@ -78,10 +78,10 @@ public class ConfigUtilTest {
             Assert.assertEquals(configurations.getTenant(), "tenant");
             Assert.assertEquals(configurations.getTransports().getTransport().get(0).getName(), "abc");
             Assert.assertEquals(configurations.getTransports().getTransport().get(0).getPort(), 8000);
-            Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), false);
+            Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), "false");
             Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "xyz");
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 9000);
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), false);
+            Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 0);
+            Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), "$sys:xyz.secure");
 
             XML configXml = ConfigUtil.getConfig(file, XML.class);
 
@@ -123,7 +123,7 @@ public class ConfigUtilTest {
             Assert.assertEquals(transport1.get("port"), 8000);
             Assert.assertEquals(transport1.get("secure"), false);
             Assert.assertEquals(transport2.get("name"), "xyz");
-            Assert.assertEquals(transport2.get("port"), 9000);
+            Assert.assertEquals(transport2.get("port"), "$sys:xyz.http.port");
             Assert.assertEquals(transport2.get("secure"), false);
 
             fileInputStream = new FileInputStream(file);
@@ -163,7 +163,7 @@ public class ConfigUtilTest {
             Assert.assertEquals(properties.get("tenant"), "tenant");
             Assert.assertEquals(properties.get("transport.abc.port"), "8000");
             Assert.assertEquals(properties.get("transport.abc.secure"), "false");
-            Assert.assertEquals(properties.get("transport.xyz.port"), "9000");
+            Assert.assertEquals(properties.get("transport.xyz.port"), "$sys:xyz.http.port");
             Assert.assertEquals(properties.get("transport.xyz.secure"), "false");
 
             fileInputStream = new FileInputStream(file);
@@ -242,6 +242,9 @@ public class ConfigUtilTest {
         envVarMap.put("HTTP_PORT", "9090");
         setEnv(envVarMap);
         System.setProperty("abc.http.port", "8080");
+        System.setProperty("xyz.http.port", "9090");
+        System.setProperty("xyz.secure", "true");
+
     }
 
     @SuppressWarnings("unchecked")

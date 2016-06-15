@@ -21,6 +21,7 @@ import org.json.XML;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.wso2.carbon.kernel.utils.configfiletypes.AbstractConfigFileType;
@@ -73,7 +74,7 @@ public final class ConfigUtil {
     private static final String DEPLOYMENT_PROPERTIES_FILE_NAME = "deployment.properties";
     private static final String ROOT_ELEMENT = "configurations";
     private static final String FILE_REGEX = "\\[.+\\.(yml|properties)\\]";
-    private static final String PLACEHOLDER_REGEX = "\\$\\s*(sys|env|sec)\\s*->(.+)";
+    private static final String PLACEHOLDER_REGEX = "\\$\\s*(sys|env|sec)\\s*:(.+)";
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(PLACEHOLDER_REGEX);
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
 
@@ -408,12 +409,13 @@ public final class ConfigUtil {
 
             try {
                 DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-                Document doc = docBuilder.parse(new InputSource(new StringReader(xmlString)));
+                Document document = docBuilder.parse(new InputSource(new StringReader(xmlString)));
                 XPath xPath = XPathFactory.newInstance().newXPath();
 
                 newConfigs.keySet().forEach(xPathKey -> {
                     try {
-                        NodeList nodeList = (NodeList) xPath.compile(xPathKey).evaluate(doc, XPathConstants.NODESET);
+                        NodeList nodeList = (NodeList) xPath.compile(xPathKey)
+                                                            .evaluate(document, XPathConstants.NODESET);
                         if (nodeList.item(0) != null) {
                             Node firstNode = nodeList.item(0);
                             firstNode.getFirstChild().setNodeValue(newConfigs.get(xPathKey));
@@ -427,7 +429,10 @@ public final class ConfigUtil {
                         throw new RuntimeException("Exception occurred when applying xpath: " + e);
                     }
                 });
-                updatedString = convertXMLtoString(doc);
+
+                //                processPlaceholders(document.getDocumentElement());
+                processPlaceholders(document.getDocumentElement().getChildNodes());
+                updatedString = convertXMLtoString(document);
             } catch (ParserConfigurationException | IOException | SAXException e) {
                 logger.error("Exception occurred when building document: " + e);
                 throw new RuntimeException("Exception occurred when building document: " + e);
@@ -437,6 +442,84 @@ public final class ConfigUtil {
                     + DEPLOYMENT_PROPERTIES_FILE_NAME);
         }
         return updatedString;
+    }
+
+    //    private static void processPlaceholders(Node node) {
+    //        // do something with the current node instead of System.out
+    //        System.out.println("NODE: " + node.getNodeName() + " ; " + node.getNodeValue());
+    //
+    //        NodeList nodeList = node.getChildNodes();
+    //        for (int i = 0; i < nodeList.getLength(); i++) {
+    //            Node currentNode = nodeList.item(i);
+    //
+    //            NamedNodeMap attributeMap = currentNode.getAttributes();
+    //            if (attributeMap != null) {
+    //                for (int j = 0; j < attributeMap.getLength(); j++) {
+    //                    System.out.println(j + " Processing Attribute: " + attributeMap.item(j).getNodeValue());
+    //                }
+    //            }
+    //            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
+    //                //calls this method for all the children which is Element
+    //                //                System.out.println("# " + currentNode.getFirstChild().getNodeValue());
+    //
+    //                Node firstChild = currentNode.getFirstChild();
+    //                if (firstChild != null) {
+    //                    System.out.println(
+    //                            "Processing Element: " + firstChild.getNodeName() + "," + firstChild.getNodeValue());
+    //                }
+    //                processPlaceholders(currentNode);
+    //            }
+    //        }
+    //    }
+
+    private static void processPlaceholders(NodeList nodeList) {
+
+        for (int count = 0; count < nodeList.getLength(); count++) {
+
+            Node tempNode = nodeList.item(count);
+
+            // make sure it's element node.
+            if (tempNode.getNodeType() == Node.ELEMENT_NODE) {
+
+                // get node name and value
+                //                System.out.println("Node Name =" + tempNode.getNodeName() + " [OPEN]");
+                //                System.out.println("\nNode value =" + tempNode.getNodeValue() );
+
+                String value = tempNode.getFirstChild().getNodeValue().trim();
+                if (value.length() != 0) {
+                    System.out.println("Node Value = " + value);
+                }
+
+                if (tempNode.hasAttributes()) {
+
+                    // get attributes names and values
+                    NamedNodeMap nodeMap = tempNode.getAttributes();
+
+                    for (int i = 0; i < nodeMap.getLength(); i++) {
+
+                        Node node = nodeMap.item(i);
+                        //                        System.out.println("attr name : " + node.getNodeName());
+                        System.out.println("attr value = " + node.getNodeValue());
+
+                    }
+
+                }
+
+                if (tempNode.hasChildNodes()) {
+
+                    // loop again if has child nodes
+                    processPlaceholders(tempNode.getChildNodes());
+
+                }
+
+                //                System.out.println("Node Name =" + tempNode.getNodeName() + " [CLOSE]");
+
+            } else {
+                //                System.out.println("x");
+            }
+
+        }
+
     }
 
     /**
@@ -513,9 +596,9 @@ public final class ConfigUtil {
                     String value = deploymentProperties.getProperty(keyString);
 
                     //Process value if it contains a $sys, $env, $sec placeholder
-                    if (value.matches(PLACEHOLDER_REGEX)) {
-                        value = processValue(value);
-                    }
+                    //                    if (value.matches(PLACEHOLDER_REGEX)) {
+                    //                        value = processValue(value);
+                    //                    }
                     //Add root element for yml, properties files
                     if (fileName.matches(FILE_REGEX)) {
                         xpath = "/" + ROOT_ELEMENT + xpath;

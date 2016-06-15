@@ -6,5 +6,5 @@ transports:
       secure: false
   - transport:
       name: xyz
-      port: 9000
+      port: $sys:xyz.http.port
       secure: false

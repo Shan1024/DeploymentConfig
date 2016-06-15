@@ -6,9 +6,9 @@
             <name>abc</name>
             <port>8000</port>
         </transport>
-        <transport secure="false">
+        <transport secure="$sys:xyz.secure">
             <name>xyz</name>
-            <port>9000</port>
+            <port>$sys:xyz.http.port</port>
         </transport>
     </transports>
 </configurations>
