@@ -75,13 +75,20 @@ public class ConfigUtilTest {
             Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
             Configurations configurations = (Configurations) unmarshaller.unmarshal(file);
 
+            //Transport 1
             Assert.assertEquals(configurations.getTenant(), "tenant");
             Assert.assertEquals(configurations.getTransports().getTransport().get(0).getName(), "abc");
             Assert.assertEquals(configurations.getTransports().getTransport().get(0).getPort(), 8000);
             Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), "false");
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "xyz");
+            //Transport 2
+            Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "pqr");
             Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 0);
-            Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), "$sys:xyz.secure");
+            Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), "$sys:pqr.secure");
+            //Transport 3
+            Assert.assertEquals(configurations.getTransports().getTransport().get(2).getName(), "xyz");
+            Assert.assertEquals(configurations.getTransports().getTransport().get(2).getPort(), 0);
+            Assert.assertEquals(configurations.getTransports().getTransport().get(2).isSecure(),
+                    "$sys:xyz.secure,true");
 
             XML configXml = ConfigUtil.getConfig(file, XML.class);
 
@@ -92,13 +99,19 @@ public class ConfigUtilTest {
                 unmarshaller = jaxbContext.createUnmarshaller();
                 configurations = (Configurations) unmarshaller.unmarshal(xmlInput);
 
+                //Transport 1
                 Assert.assertEquals(configurations.getTenant(), "new_tenant");
                 Assert.assertEquals(configurations.getTransports().getTransport().get(0).getName(), "abc");
-                Assert.assertEquals(configurations.getTransports().getTransport().get(0).getPort(), 8080);
-                Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), true);
-                Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "xyz");
-                Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 9090);
-                Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), true);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(0).getPort(), 8001);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(0).isSecure(), "true");
+                //Transport 2
+                Assert.assertEquals(configurations.getTransports().getTransport().get(1).getName(), "pqr");
+                Assert.assertEquals(configurations.getTransports().getTransport().get(1).getPort(), 8501);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(1).isSecure(), "true");
+                //Transport 3
+                Assert.assertEquals(configurations.getTransports().getTransport().get(2).getName(), "xyz");
+                Assert.assertEquals(configurations.getTransports().getTransport().get(2).getPort(), 9000);
+                Assert.assertEquals(configurations.getTransports().getTransport().get(2).isSecure(), "true");
             }
         } catch (JAXBException e) {
             logger.error(e.toString());
@@ -117,14 +130,21 @@ public class ConfigUtilTest {
             ArrayList transports = (ArrayList) map.get("transports");
             LinkedHashMap transport1 = (LinkedHashMap) ((LinkedHashMap) transports.get(0)).get("transport");
             LinkedHashMap transport2 = (LinkedHashMap) ((LinkedHashMap) transports.get(1)).get("transport");
+            LinkedHashMap transport3 = (LinkedHashMap) ((LinkedHashMap) transports.get(2)).get("transport");
 
             Assert.assertEquals(map.get("tenant"), "tenant");
+            //Transport 1
             Assert.assertEquals(transport1.get("name"), "abc");
             Assert.assertEquals(transport1.get("port"), 8000);
             Assert.assertEquals(transport1.get("secure"), false);
-            Assert.assertEquals(transport2.get("name"), "xyz");
-            Assert.assertEquals(transport2.get("port"), "$sys:xyz.http.port");
-            Assert.assertEquals(transport2.get("secure"), false);
+            //Transport 2
+            Assert.assertEquals(transport2.get("name"), "pqr");
+            Assert.assertEquals(transport2.get("port"), "$sys:pqr.http.port");
+            Assert.assertEquals(transport2.get("secure"), "$sys:pqr.secure");
+            //Transport 3
+            Assert.assertEquals(transport3.get("name"), "xyz");
+            Assert.assertEquals(transport3.get("port"), "$sys:xyz.http.port,9000");
+            Assert.assertEquals(transport3.get("secure"), "$sys:xyz.secure,true");
 
             fileInputStream = new FileInputStream(file);
             YAML configYml = ConfigUtil.getConfig(fileInputStream, file.getName(), YAML.class);
@@ -135,14 +155,21 @@ public class ConfigUtilTest {
                 transports = (ArrayList) map.get("transports");
                 transport1 = (LinkedHashMap) ((LinkedHashMap) transports.get(0)).get("transport");
                 transport2 = (LinkedHashMap) ((LinkedHashMap) transports.get(1)).get("transport");
+                transport3 = (LinkedHashMap) ((LinkedHashMap) transports.get(2)).get("transport");
 
                 Assert.assertEquals(map.get("tenant"), "new_tenant");
+                //Transport 1
                 Assert.assertEquals(transport1.get("name"), "abc");
-                Assert.assertEquals(transport1.get("port"), 8080);
+                Assert.assertEquals(transport1.get("port"), 8001);
                 Assert.assertEquals(transport1.get("secure"), true);
-                Assert.assertEquals(transport2.get("name"), "xyz");
-                Assert.assertEquals(transport2.get("port"), 9090);
+                //Transport 2
+                Assert.assertEquals(transport2.get("name"), "pqr");
+                Assert.assertEquals(transport2.get("port"), 8501);
                 Assert.assertEquals(transport2.get("secure"), true);
+                //Transport 3
+                Assert.assertEquals(transport3.get("name"), "xyz");
+                Assert.assertEquals(transport3.get("port"), 9000);
+                Assert.assertEquals(transport3.get("secure"), true);
             }
         } catch (FileNotFoundException e) {
             logger.error(e.toString());
@@ -161,10 +188,15 @@ public class ConfigUtilTest {
             properties.load(fileInputStream);
 
             Assert.assertEquals(properties.get("tenant"), "tenant");
+            //Transport 1
             Assert.assertEquals(properties.get("transport.abc.port"), "8000");
             Assert.assertEquals(properties.get("transport.abc.secure"), "false");
-            Assert.assertEquals(properties.get("transport.xyz.port"), "$sys:xyz.http.port");
-            Assert.assertEquals(properties.get("transport.xyz.secure"), "false");
+            //Transport 2
+            Assert.assertEquals(properties.get("transport.pqr.port"), "$sys:pqr.http.port");
+            Assert.assertEquals(properties.get("transport.pqr.secure"), "$sys:pqr.secure");
+            //Transport 3
+            Assert.assertEquals(properties.get("transport.xyz.port"), "$sys:xyz.http.port,9000");
+            Assert.assertEquals(properties.get("transport.xyz.secure"), "sys:xyz.secure,true");
 
             fileInputStream = new FileInputStream(file);
             Properties configProperties = ConfigUtil.getConfig(fileInputStream, file.getName(), Properties.class);
@@ -173,9 +205,14 @@ public class ConfigUtilTest {
             if (value.isPresent()) {
                 properties.load(new StringReader(value.get()));
                 Assert.assertEquals(properties.get("tenant"), "new_tenant");
+                //Transport 1
                 Assert.assertEquals(properties.get("transport.abc.port"), "8080");
                 Assert.assertEquals(properties.get("transport.abc.secure"), "true");
-                Assert.assertEquals(properties.get("transport.xyz.port"), "9090");
+                //Transport 2
+                Assert.assertEquals(properties.get("transport.pqr.port"), "8501");
+                Assert.assertEquals(properties.get("transport.pqr.secure"), "true");
+                //Transport 3
+                Assert.assertEquals(properties.get("transport.xyz.port"), "9000");
                 Assert.assertEquals(properties.get("transport.xyz.secure"), "true");
             }
         } catch (IOException e) {
@@ -191,35 +228,35 @@ public class ConfigUtilTest {
         String newValue = ConfigUtil.getConfig("[Example.xml]/configurations/tenant");
         Assert.assertEquals(newValue, "new_tenant");
         newValue = ConfigUtil.getConfig("[Example.xml]/configurations/transports/transport/port");
-        Assert.assertEquals(newValue, "8080");
+        Assert.assertEquals(newValue, "$sys:abc.http.port");
         newValue = ConfigUtil.getConfig("[Example.xml]/configurations/transports/transport[name='abc']/@secure");
         Assert.assertEquals(newValue, "true");
-        newValue = ConfigUtil.getConfig("[Example.xml]/configurations/transports/transport[name='xyz']/port");
-        Assert.assertEquals(newValue, "9090");
+        newValue = ConfigUtil.getConfig("[Example.xml]/configurations/transports/transport[name='pqr']/port");
+        Assert.assertEquals(newValue, null);
         newValue = ConfigUtil.getConfig("[Example.xml]/configurations/transports/transport[2]/@secure");
-        Assert.assertEquals(newValue, "true");
+        Assert.assertEquals(newValue, null);
 
         newValue = ConfigUtil.getConfig("[Example.yml]/tenant");
         Assert.assertEquals(newValue, "new_tenant");
         newValue = ConfigUtil.getConfig("[Example.yml]/transports/transport/port");
-        Assert.assertEquals(newValue, "8080");
+        Assert.assertEquals(newValue, "$sys:abc.http.port");
         newValue = ConfigUtil.getConfig("[Example.yml]/transports/transport[name='abc']/secure");
         Assert.assertEquals(newValue, "true");
-        newValue = ConfigUtil.getConfig("[Example.yml]/transports/transport[name='xyz']/port");
-        Assert.assertEquals(newValue, "9090");
+        newValue = ConfigUtil.getConfig("[Example.yml]/transports/transport[name='pqr']/port");
+        Assert.assertEquals(newValue, null);
         newValue = ConfigUtil.getConfig("[Example.yml]/transports[2]/transport/secure");
-        Assert.assertEquals(newValue, "true");
+        Assert.assertEquals(newValue, null);
 
         newValue = ConfigUtil.getConfig("[Example.properties]/tenant");
         Assert.assertEquals(newValue, "new_tenant");
         newValue = ConfigUtil.getConfig("[Example.properties]/transport.abc.port");
-        Assert.assertEquals(newValue, "8080");
+        Assert.assertEquals(newValue, "$sys:abc.http.port");
         newValue = ConfigUtil.getConfig("[Example.properties]/transport.abc.secure");
-        Assert.assertEquals(newValue, "true");
-        newValue = ConfigUtil.getConfig("[Example.properties]/transport.xyz.port");
-        Assert.assertEquals(newValue, "9090");
-        newValue = ConfigUtil.getConfig("[Example.properties]/transport.xyz.secure");
-        Assert.assertEquals(newValue, "true");
+        Assert.assertEquals(newValue, "$sys:abc.port.secure,true");
+        newValue = ConfigUtil.getConfig("[Example.properties]/transport.pqr.port");
+        Assert.assertEquals(newValue, null);
+        newValue = ConfigUtil.getConfig("[Example.properties]/transport.pqr.secure");
+        Assert.assertEquals(newValue, null);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
@@ -237,14 +274,14 @@ public class ConfigUtilTest {
     }
 
     private void setUpEnvironment() {
-        System.setProperty("https.port", "8080");
+        //This is how to set Environment Variables
         Map<String, String> envVarMap = new HashMap<>();
         envVarMap.put("HTTP_PORT", "9090");
         setEnv(envVarMap);
-        System.setProperty("abc.http.port", "8080");
-        System.setProperty("xyz.http.port", "9090");
-        System.setProperty("xyz.secure", "true");
-
+        //This is how to set System properties
+        System.setProperty("abc.http.port", "8001");
+        System.setProperty("pqr.secure", "true");
+        System.setProperty("pqr.http.port", "8501");
     }
 
     @SuppressWarnings("unchecked")
