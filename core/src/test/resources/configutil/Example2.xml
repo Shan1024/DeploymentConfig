@@ -5,7 +5,6 @@
     <transports>
         <transport secure="false">
             <name>abc</name>
-            <port>8000</port>
         </transport>
     </transports>
 </configurations>
