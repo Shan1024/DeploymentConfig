@@ -76,6 +76,8 @@ public final class ConfigUtil {
     private static final String FILE_REGEX = "\\[.+\\.(yml|properties)\\]";
     private static final String PLACEHOLDER_REGEX = "\\$\\s*(sys|env|sec)\\s*:(.+)";
     private static final Pattern PLACEHOLDER_PATTERN = Pattern.compile(PLACEHOLDER_REGEX);
+    private static final String PLACEHOLDER_WITH_DEFAULT_REGEX = "\\$\\s*(sys|env|sec)\\s*:(.+),(.+)";
+    private static final Pattern PLACEHOLDER_WITH_DEFAULT_PATTERN = Pattern.compile(PLACEHOLDER_WITH_DEFAULT_REGEX);
     private static final Map<String, Map<String, String>> deploymentPropertiesMap = readDeploymentFile();
 
     private enum ConfigFileFormat {
@@ -429,8 +431,7 @@ public final class ConfigUtil {
                         throw new RuntimeException("Exception occurred when applying xpath: " + e);
                     }
                 });
-
-                //                processPlaceholders(document.getDocumentElement());
+                //Process the placeholders
                 processPlaceholders(document.getDocumentElement().getChildNodes());
                 updatedString = convertXMLtoString(document);
             } catch (ParserConfigurationException | IOException | SAXException e) {
@@ -444,82 +445,50 @@ public final class ConfigUtil {
         return updatedString;
     }
 
-    //    private static void processPlaceholders(Node node) {
-    //        // do something with the current node instead of System.out
-    //        System.out.println("NODE: " + node.getNodeName() + " ; " + node.getNodeValue());
-    //
-    //        NodeList nodeList = node.getChildNodes();
-    //        for (int i = 0; i < nodeList.getLength(); i++) {
-    //            Node currentNode = nodeList.item(i);
-    //
-    //            NamedNodeMap attributeMap = currentNode.getAttributes();
-    //            if (attributeMap != null) {
-    //                for (int j = 0; j < attributeMap.getLength(); j++) {
-    //                    System.out.println(j + " Processing Attribute: " + attributeMap.item(j).getNodeValue());
-    //                }
-    //            }
-    //            if (currentNode.getNodeType() == Node.ELEMENT_NODE) {
-    //                //calls this method for all the children which is Element
-    //                //                System.out.println("# " + currentNode.getFirstChild().getNodeValue());
-    //
-    //                Node firstChild = currentNode.getFirstChild();
-    //                if (firstChild != null) {
-    //                    System.out.println(
-    //                            "Processing Element: " + firstChild.getNodeName() + "," + firstChild.getNodeValue());
-    //                }
-    //                processPlaceholders(currentNode);
-    //            }
-    //        }
-    //    }
-
+    /**
+     * This method iterates throught the given node list and replaces the placeholders with values
+     *
+     * @param nodeList Node list that needs to be checked for placeholders
+     */
     private static void processPlaceholders(NodeList nodeList) {
-
         for (int count = 0; count < nodeList.getLength(); count++) {
-
             Node tempNode = nodeList.item(count);
-
-            // make sure it's element node.
+            // Make sure that the node is a Element node
             if (tempNode.getNodeType() == Node.ELEMENT_NODE) {
-
-                // get node name and value
-                //                System.out.println("Node Name =" + tempNode.getNodeName() + " [OPEN]");
-                //                System.out.println("\nNode value =" + tempNode.getNodeValue() );
-
-                String value = tempNode.getFirstChild().getNodeValue().trim();
-                if (value.length() != 0) {
-                    System.out.println("Node Value = " + value);
-                }
-
-                if (tempNode.hasAttributes()) {
-
-                    // get attributes names and values
-                    NamedNodeMap nodeMap = tempNode.getAttributes();
-
-                    for (int i = 0; i < nodeMap.getLength(); i++) {
-
-                        Node node = nodeMap.item(i);
-                        //                        System.out.println("attr name : " + node.getNodeName());
-                        System.out.println("attr value = " + node.getNodeValue());
-
+                String value;
+                if (tempNode.getFirstChild().getNodeValue() != null) {
+                    value = tempNode.getFirstChild().getNodeValue().trim();
+                    if (value.length() != 0) {
+                        String newValue = value;
+                        if (value.matches(PLACEHOLDER_WITH_DEFAULT_REGEX)) {
+                            newValue = processPlaceholderWithDefaultValue(value);
+                        } else if (value.matches(PLACEHOLDER_REGEX)) {
+                            newValue = processPlaceholder(value);
+                        }
+                        tempNode.getFirstChild().setNodeValue(newValue);
                     }
-
                 }
-
+                if (tempNode.hasAttributes()) {
+                    // Get attributes' names and values
+                    NamedNodeMap nodeMap = tempNode.getAttributes();
+                    for (int i = 0; i < nodeMap.getLength(); i++) {
+                        Node node = nodeMap.item(i);
+                        value = node.getNodeValue();
+                        String newValue = value;
+                        if (value.matches(PLACEHOLDER_WITH_DEFAULT_REGEX)) {
+                            newValue = processPlaceholderWithDefaultValue(value);
+                        } else if (value.matches(PLACEHOLDER_REGEX)) {
+                            newValue = processPlaceholder(value);
+                        }
+                        node.setNodeValue(newValue);
+                    }
+                }
                 if (tempNode.hasChildNodes()) {
-
-                    // loop again if has child nodes
+                    // Loop again if the current node has child nodes
                     processPlaceholders(tempNode.getChildNodes());
-
                 }
-
-                //                System.out.println("Node Name =" + tempNode.getNodeName() + " [CLOSE]");
-
-            } else {
-                //                System.out.println("x");
             }
-
         }
-
     }
 
     /**
@@ -595,10 +564,6 @@ public final class ConfigUtil {
                     String xpath = keyString.substring(index);
                     String value = deploymentProperties.getProperty(keyString);
 
-                    //Process value if it contains a $sys, $env, $sec placeholder
-                    //                    if (value.matches(PLACEHOLDER_REGEX)) {
-                    //                        value = processValue(value);
-                    //                    }
                     //Add root element for yml, properties files
                     if (fileName.matches(FILE_REGEX)) {
                         xpath = "/" + ROOT_ELEMENT + xpath;
@@ -612,8 +577,6 @@ public final class ConfigUtil {
                         tempPropertiesMap.put(fileName, tempMap);
                     }
                 });
-            } else {
-                logger.info(DEPLOYMENT_PROPERTIES_FILE_NAME + " file not found at " + file.getAbsolutePath());
             }
         } catch (IOException ioException) {
             logger.error("Error occurred during reading the " + DEPLOYMENT_PROPERTIES_FILE_NAME +
@@ -638,7 +601,7 @@ public final class ConfigUtil {
      * @param placeholder Placeholder that needs to be replaced
      * @return New value which corresponds to placeholder
      */
-    private static String processValue(String placeholder) {
+    private static String processPlaceholder(String placeholder) {
         String newValue = placeholder;
         Matcher matcher = PLACEHOLDER_PATTERN.matcher(placeholder);
         if (matcher.find()) {
@@ -657,6 +620,43 @@ public final class ConfigUtil {
                     if (newValue == null) {
                         String failMessage = "Processing " + DEPLOYMENT_PROPERTIES_FILE_NAME + " failed.";
                         throw new RuntimeException("System property " + value + " not found." + failMessage);
+                    }
+                    break;
+                case "sec":
+                    //todo
+                    break;
+                default:
+                    throw new RuntimeException("Unidentified placeholder key: " + key);
+            }
+        }
+        return newValue;
+    }
+
+    /**
+     * This method returns the Environment, System, Secure value which correspond to the given placeholder. If the
+     * Environment, System, Secure value is not available, it will return the default value.
+     *
+     * @param placeholder Placeholder that needs to be replaced
+     * @return New value which corresponds to placeholder or the default value
+     */
+    private static String processPlaceholderWithDefaultValue(String placeholder) {
+        String newValue = placeholder;
+        Matcher matcher = PLACEHOLDER_WITH_DEFAULT_PATTERN.matcher(placeholder);
+        if (matcher.find()) {
+            String key = matcher.group(1).trim();
+            String value = matcher.group(2).trim();
+            String defaultValue = matcher.group(3).trim();
+            switch (key) {
+                case "env":
+                    newValue = System.getenv(value);
+                    if (newValue == null) {
+                        newValue = defaultValue;
+                    }
+                    break;
+                case "sys":
+                    newValue = System.getProperty(value);
+                    if (newValue == null) {
+                        newValue = defaultValue;
                     }
                     break;
                 case "sec":
